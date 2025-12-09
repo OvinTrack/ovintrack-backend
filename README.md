@@ -1,6 +1,8 @@
 # OvinTrack backend
 
-Development stack : [Next.js](https://nextjs.org), [Prisma](https://www.prisma.io), [Tailwind CSS](https://tailwindcss.com), [TypeScript](https://www.typescriptlang.org), [Vercel](https://vercel.com), Auth.js, NeonDB, Resend, Stripe
+Development stack : [Next.js](https://nextjs.org), [Prisma](https://www.prisma.io), [Tailwind CSS](https://tailwindcss.com), [TypeScript](https://www.typescriptlang.org), [Vercel](https://vercel.com), Auth.js, NeonDB, Resend, Stripe, Leaflet, OpenStreetMap.
+
+App deployed on Vercel : [https://ovintrack-backend.vercel.app/](https://ovintrack-backend.vercel.app/)
 
 ## Description
 
