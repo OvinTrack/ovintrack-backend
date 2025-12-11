@@ -3,17 +3,28 @@
 Development stack :
 
  -[TypeScript](https://www.typescriptlang.org) - Langage de programmation
- -[Next.js](https://nextjs.org) - Framework de développement web
- -[Node.js](https://nodejs.org) - Serveur de développement
- -[Tailwind CSS](https://tailwindcss.com) - Framework CSS
- -[Prisma](https://www.prisma.io) - ORM
- -[NeonDB](https://neon.tech) - Base de données (PostgreSQL)
- -[Vercel](https://vercel.com) - Platforme de déploiement
- -[Auth.js](https://authjs.dev) - Authentication
- -[Resend](https://resend.com) - Envoi d'Email
- -[Stripe](https://stripe.com) - Gestion des Paiements
- -[Leaflet(JS)](https://leafletjs.com) - Carte
- -[OpenStreetMap](https://www.openstreetmap.org) - Carte OpenStreetMap
+
+-[Next.js](https://nextjs.org) - Framework de développement web
+
+-[Node.js](https://nodejs.org) - Serveur de développement
+
+-[Tailwind CSS](https://tailwindcss.com) - Framework CSS
+
+-[Prisma](https://www.prisma.io) - ORM
+
+-[NeonDB](https://neon.tech) - Base de données (PostgreSQL)
+
+-[Vercel](https://vercel.com) - Platforme de déploiement
+
+-[Auth.js](https://authjs.dev) - Authentication
+
+-[Resend](https://resend.com) - Envoi d'Email
+
+-[Stripe](https://stripe.com) - Gestion des Paiements
+
+-[Leaflet(JS)](https://leafletjs.com) - Carte
+
+-[OpenStreetMap](https://www.openstreetmap.org) - Carte OpenStreetMap
 
 App deployed on Vercel : [https://ovintrack-backend.vercel.app/](https://ovintrack-backend.vercel.app/) => coming soon
 
