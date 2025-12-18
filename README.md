@@ -2,7 +2,7 @@
 
 Development stack :
 
- -[TypeScript](https://www.typescriptlang.org) - Langage de programmation
+-[TypeScript](https://www.typescriptlang.org) - Langage de programmation
 
 -[Next.js](https://nextjs.org) - Framework de développement web
 
@@ -25,6 +25,8 @@ Development stack :
 -[Leaflet(JS)](https://leafletjs.com) - Carte
 
 -[OpenStreetMap](https://www.openstreetmap.org) - Carte OpenStreetMap
+
+-[Next-Intl](https://next-intl.dev/) - Gestion de la traduction
 
 App deployed on Vercel : [https://ovintrack-backend.vercel.app/](https://ovintrack-backend.vercel.app/) => coming soon
 
