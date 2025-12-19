@@ -75,7 +75,7 @@ export default function MapComponent({ points }: MapProps)
     }, [points]);
 
     return (
-        <div className="w-[1000px] h-[600px] my-5 rounded-xl overflow-hidden shadow">
+        <div className="w-250 h-150 my-5 rounded-xl overflow-hidden shadow">
             <div ref={containerRef} className="w-full h-full" />
         </div>
     );
