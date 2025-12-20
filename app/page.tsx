@@ -1,6 +1,6 @@
 import Map from "@/components/Map";
-import prisma from "@/lib/prisma";
 import { User } from "@prisma/client";
+//import prisma from "@/lib/prisma";
 
 export const points = [
   { lat: 36.7538, lng: 3.0588, label: "Alger" },
@@ -8,8 +8,13 @@ export const points = [
   { lat: 36.365, lng: 6.6147, label: "Constantine" }
 ];
 
-// Récupérer tous les utilisateurs
-const users = await prisma.user.findMany();
+// Récupére tous les utilisateurs
+// Directemeent via Prisma
+//const users = await prisma.user.findMany();
+// Ou via l'API interne
+const users = await fetch('http://localhost:3000/api/users')
+  .then(res => res.json())
+  .then(data => data.users);
 
 export default async function Home()
 {
