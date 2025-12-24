@@ -24,17 +24,18 @@ async function main()
     
     switch (environment) {
 	case 'sheeps-only':
-	    console.log('🐑🐑🐑 Mode génération de moutons...')
-	    const sheep = ({
-		data: [
+	    console.log('🐑🐑🐑 Mode génération de 100 moutons supplémentaires...')
+	    
+	    for (let i = 0; i < 100; i++) {
+		const sheep = await prisma.sheep.create({
+		    data:
 		    {
 			lat : ( 36.7538 - 35.6971  ) * Math.random() + 35.6971,
 			lng : ( 6.6147 - (-0.6308) ) * Math.random() - 0.6308,
 		    }
-		]
-	    }); 
-
-	    console.log(sheep);
+		});
+		console.log(sheep);
+	    }
 	    
 	    break
     default:
