@@ -1,12 +1,9 @@
 import Map from "@/components/Map";
 import { User } from "@prisma/client";
-//import prisma from "@/lib/prisma";
 
-export const points = [
-  { lat: 36.7538, lng: 3.0588, label: "Alger" },
-  { lat: 35.6971, lng: -0.6308, label: "Oran" },
-  { lat: 36.365, lng: 6.6147, label: "Constantine" }
-];
+const pointsData = await fetch('http://localhost:3000/api/sheeps')
+  .then(res => res.json());
+const points = pointsData?.sheeps ?? [];
 
 // Récupére tous les utilisateurs
 // Directemeent via Prisma
@@ -27,11 +24,11 @@ export default async function Home()
         </div>
         <div className="w-full text-center mt-4 text-gray-500 dark:text-gray-400">
           <h1 className="text-2xl font-bold w-full text-center">Contenu de la table User</h1>
-          <li className="mt-2">
+          <ul className="mt-2">
             {users.map((user: User) => (
-              <ul key={user.id}>{user.name} ({user.email}) </ul>
+              <li key={user.id}>{user.name} ({user.email})</li>
             ))}
-          </li>
+          </ul>
         </div>
       </main>
     </div>

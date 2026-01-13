@@ -6,7 +6,7 @@ import type { Map as LeafletMap } from "leaflet";
 export type Point = {
     lat: number;
     lng: number;
-    label?: string;
+    id: number;
 };
 
 type MapProps = {
@@ -55,7 +55,7 @@ export default function MapComponent({ points }: MapProps)
             for (const p of points)
             {
                 const marker = L.marker([p.lat, p.lng]);
-                if (p.label) marker.bindPopup(p.label);
+                if (p.id) marker.bindPopup(`ID: ${p.id}`);
                 marker.addTo(layer);
             }
 

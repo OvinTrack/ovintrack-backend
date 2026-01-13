@@ -17,7 +17,7 @@ model User {
 
 model Sheep {
   id        Int      @id @default(autoincrement())
-  lat	    Float
-  lng	    Float
-  updatedAt DateTime @default(now())  
+  lat       Float
+  lng       Float
+  updatedAt DateTime @default(now())
 }
