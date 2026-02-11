@@ -1,17 +1,30 @@
 import Map from "@/components/Map";
 import { User } from "@prisma/client";
 
-const pointsData = await fetch('http://localhost:3000/api/sheeps')
-  .then(res => res.json());
+async function safeFetchJson(url: string, fallback: unknown = null)
+{
+  try
+  {
+    const res = await fetch(url);
+
+    if (!res.ok)
+      return fallback;
+
+    return await res.json();
+  }
+  catch (e)
+  {
+    console.warn(`Fetch failed for ${url}:`, e);
+    return fallback;
+  }
+}
+
+const pointsData = await safeFetchJson('http://localhost:3000/api/sheeps', { sheeps: [] });
 const points = pointsData?.sheeps ?? [];
 
-// Récupére tous les utilisateurs
-// Directemeent via Prisma
-//const users = await prisma.user.findMany();
-// Ou via l'API interne
-const users = await fetch('http://localhost:3000/api/users')
-  .then(res => res.json())
-  .then(data => data.users);
+// Récupére tous les utilisateurs (via API interne)
+const usersData = await safeFetchJson('http://localhost:3000/api/users', { users: [] });
+const users = usersData?.users ?? [];
 
 export default async function Home()
 {

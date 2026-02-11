@@ -16,7 +16,7 @@ Development stack :
 
 -[Vercel](https://vercel.com) - Platforme de déploiement
 
--[Auth.js](https://authjs.dev) - Authentication
+-[Auth.js](https://authjs.dev) ou simple gestion de session via cookies - Authentication
 
 -[Resend](https://resend.com) - Envoi d'Email
 
@@ -34,6 +34,7 @@ Un fichier `.env` est utilisé pour configurer les variables d'environnement.
 Il doit contenir les variables suivantes :
 
 -`DATABASE_URL="file:./data/dev.db"`
+-`TRACCAR_BASE_URL="http://51.44.57.214:8082/"`
 
 ## Description
 
