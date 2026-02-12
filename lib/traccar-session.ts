@@ -1,6 +1,5 @@
 import { cookies } from 'next/headers';
-
-import type { TraccarUser } from '@/lib/traccar-types';
+import type { TraccarUser } from '@/types/traccar-types';
 
 export const TRACCAR_SESSION_COOKIE_NAME = 'traccar_sid';
 

@@ -1,17 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { Map as LeafletMap } from "leaflet";
+import type { LayerGroup, Map as LeafletMap } from "leaflet";
+import { Ovin } from "@/types/traccar-types";
 
-export type Point = {
-    lat: number;
-    lng: number;
-    id: number;
-};
-
-type MapProps = {
-    readonly points: Point[];
-};
+type MapProps = { readonly points: Ovin[]; };
 
 export default function MapComponent({ points }: MapProps)
 {
@@ -21,6 +14,8 @@ export default function MapComponent({ points }: MapProps)
     useEffect(() =>
     {
         // Import dynamique de Leaflet côté client uniquement
+        let layer: LayerGroup | null = null;
+
         import("leaflet").then((L) =>
         {
             import("leaflet/dist/leaflet.css");
@@ -50,32 +45,39 @@ export default function MapComponent({ points }: MapProps)
             const map = mapInstance.current;
 
             // Supprimer anciens marqueurs (update propre)
-            const layer = L.layerGroup().addTo(map);
+            layer = L.layerGroup().addTo(map);
 
-            for (const p of points)
+            const safePoints = Array.isArray(points) ? points : [];
+
+            for (const p of safePoints)
             {
-                const marker = L.marker([p.lat, p.lng]);
-                if (p.id) marker.bindPopup(`ID: ${p.id}`);
+                const marker = L.marker([p.position.latitude, p.position.longitude]);
+                if (p.device?.name) marker.bindPopup(`ID: ${p.device.name}`);
                 marker.addTo(layer);
             }
 
             // Ajuster le zoom automatiquement
-            if (points.length > 0)
+            if (safePoints.length > 0)
             {
-                const bounds = L.latLngBounds(points.map((p) => [p.lat, p.lng]));
+                const bounds = L.latLngBounds(safePoints.map((p) => [p.position.latitude, p.position.longitude]));
                 map.fitBounds(bounds, { padding: [40, 40] });
             }
 
-            // Nettoyage lors du démontage
-            return () =>
-            {
-                map.removeLayer(layer);
-            };
         });
+
+        // Nettoyage lors du démontage
+        return () =>
+        {
+            const map = mapInstance.current;
+            if (map && layer)
+            {
+                try { map.removeLayer(layer); } catch { }
+            }
+        };
     }, [points]);
 
     return (
-        <div className="w-250 h-150 my-5 rounded-xl overflow-hidden shadow">
+        <div className="w-screen h-screen my-5 rounded-xl shadow">
             <div ref={containerRef} className="w-full h-full" />
         </div>
     );

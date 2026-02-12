@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import type { TraccarDevice } from '@/lib/traccar-types';
+import type { TraccarDevice } from '@/types/traccar-types';
 import { getTraccarErrorPayload, traccarFetch } from '@/lib/traccar-session';
 
 export async function GET()

@@ -1,49 +1,109 @@
-import Map from "@/components/Map";
-import { User } from "@prisma/client";
+'use client';
 
-async function safeFetchJson(url: string, fallback: unknown = null)
+import { useState } from 'react';
+import type { ApiError } from '@/types/traccar-types';
+
+export default function TraccarLoginPage()
 {
-  try
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const onSubmit = async (event: React.SyntheticEvent<HTMLFormElement>) =>
   {
-    const res = await fetch(url);
+    event.preventDefault();
+    setLoading(true);
+    setMessage('');
 
-    if (!res.ok)
-      return fallback;
+    try
+    {
+      const loginResponse = await fetch('/api/traccar/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    return await res.json();
-  }
-  catch (e)
+      if (!loginResponse.ok)
+      {
+        const errorPayload = await loginResponse.json() as ApiError;
+        throw new Error(errorPayload.message ?? 'Login failed');
+      }
+
+      setMessage('Connected to Traccar.');
+    }
+    catch (error)
+    {
+      setMessage(error instanceof Error ? error.message : 'Unexpected error');
+    }
+    finally
+    {
+      setLoading(false);
+    }
+  };
+
+  const logout = async () =>
   {
-    console.warn(`Fetch failed for ${url}:`, e);
-    return fallback;
-  }
-}
+    setLoading(true);
 
-const pointsData = await safeFetchJson('http://localhost:3000/api/sheeps', { sheeps: [] });
-const points = pointsData?.sheeps ?? [];
+    try
+    {
+      await fetch('/api/traccar/logout', {
+        method: 'POST',
+      });
 
-// Récupére tous les utilisateurs (via API interne)
-const usersData = await safeFetchJson('http://localhost:3000/api/users', { users: [] });
-const users = usersData?.users ?? [];
+      setMessage('Logged out.');
+    }
+    finally
+    {
+      setLoading(false);
+    }
+  };
 
-export default async function Home()
-{
   return (
-    <div className="flex items-center justify-center bg-zinc-50 font-sans dark:bg-black w-full h-full">
-      <main className="flex w-full h-full flex-col items-center justify-between bg-white dark:bg-black sm:items-start m-5">
-        <h1 className="text-2xl font-bold w-full text-center">Exemple de carte avec des points GPS</h1>
-        <div className="w-full h-full flex items-center justify-center">
-          <Map points={points} />
+    <main className="mx-auto max-w-xl p-6 space-y-4">
+
+      <h1 className="text-2xl font-bold w-full text-center">OVIN-TRACK</h1>
+
+      <form className="space-y-3" onSubmit={onSubmit}>
+
+        <input
+          className="w-full rounded border p-2"
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          required />
+
+        <input
+          className="w-full rounded border p-2"
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          required />
+
+        <div className="flex gap-2">
+          <button
+            className="rounded border px-3 py-2 disabled:opacity-50"
+            type="submit"
+            disabled={loading}>
+            {loading ? 'Loading...' : 'Login'}
+          </button>
+          <button
+            className="rounded border px-3 py-2 disabled:opacity-50"
+            type="button"
+            onClick={logout}
+            disabled={loading}>
+            Logout
+          </button>
         </div>
-        <div className="w-full text-center mt-4 text-gray-500 dark:text-gray-400">
-          <h1 className="text-2xl font-bold w-full text-center">Contenu de la table User</h1>
-          <ul className="mt-2">
-            {users.map((user: User) => (
-              <li key={user.id}>{user.name} ({user.email})</li>
-            ))}
-          </ul>
-        </div>
-      </main>
-    </div>
+      </form>
+
+      {message && <p className="text-sm">{message}</p>}
+      <button className="mt-10 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600" onClick={() => globalThis.location.href = '/dashboard'}> View map</button>
+    </main>
   );
 }

@@ -21,3 +21,14 @@ export interface TraccarUser
     name: string;
     email: string;
 }
+
+export interface ApiError
+{
+    message?: string;
+}
+
+export interface Ovin
+{
+    device: TraccarDevice;
+    position: TraccarPosition;
+}

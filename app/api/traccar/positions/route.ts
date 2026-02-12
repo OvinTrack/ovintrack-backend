@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-import type { TraccarPosition } from '@/lib/traccar-types';
+import type { TraccarPosition } from '@/types/traccar-types';
 import { getTraccarErrorPayload, traccarFetch } from '@/lib/traccar-session';
 
 export async function GET(request: NextRequest)
