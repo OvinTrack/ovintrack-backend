@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import type { ApiError } from '@/types/traccar-types';
+import type { ApiError, Ovin } from '@/types/traccar-types';
+import Map from "@/components/Map";
 
 export default function TraccarLoginPage()
 {
@@ -9,10 +10,10 @@ export default function TraccarLoginPage()
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [points, setPoints] = useState<Ovin[]>([]);
 
-  const onSubmit = async (event: React.SyntheticEvent<HTMLFormElement>) =>
+  const onSubmit = async () =>
   {
-    event.preventDefault();
     setLoading(true);
     setMessage('');
 
@@ -33,6 +34,8 @@ export default function TraccarLoginPage()
       }
 
       setMessage('Connected to Traccar.');
+      const ovins = await fetch('/api/ovins').then((response) => response.json()) as Ovin[];
+      setPoints(ovins);
     }
     catch (error)
     {
@@ -55,6 +58,8 @@ export default function TraccarLoginPage()
       });
 
       setMessage('Logged out.');
+      setPoints([]);
+      globalThis.location.reload();
     }
     finally
     {
@@ -63,11 +68,11 @@ export default function TraccarLoginPage()
   };
 
   return (
-    <main className="mx-auto max-w-xl p-6 space-y-4">
-
-      <h1 className="text-2xl font-bold w-full text-center">OVIN-TRACK</h1>
-
-      <form className="space-y-3" onSubmit={onSubmit}>
+    <main className="mx-auto w-screen h-screen items-center bg-zinc-50 font-sans dark:bg-black flex flex-col p-5">
+      <div className="flex items-center justify-center bg-zinc-50 font-sans dark:bg-black w-full mb-10">
+        <h1 className="text-4xl font-bold w-full text-center">OVIN-TRACK</h1>
+      </div>
+      <div className="space-y-3 w-xl min-h-50 border border-white rounded-2xl p-5">
 
         <input
           className="w-full rounded border p-2"
@@ -85,25 +90,30 @@ export default function TraccarLoginPage()
           onChange={(event) => setPassword(event.target.value)}
           required />
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 justify-end">
+          <div className="flex-1">
+            {message && <p className="text-sm">{message}</p>}
+          </div>
           <button
-            className="rounded border px-3 py-2 disabled:opacity-50"
+            className="rounded border px-3 py-2 disabled:opacity-50 cursor-pointer"
             type="submit"
+            onClick={onSubmit}
             disabled={loading}>
             {loading ? 'Loading...' : 'Login'}
           </button>
           <button
-            className="rounded border px-3 py-2 disabled:opacity-50"
+            className="rounded border px-3 py-2 disabled:opacity-50 cursor-pointer"
             type="button"
             onClick={logout}
             disabled={loading}>
             Logout
           </button>
         </div>
-      </form>
+      </div>
 
-      {message && <p className="text-sm">{message}</p>}
-      <button className="mt-10 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600" onClick={() => globalThis.location.href = '/dashboard'}> View map</button>
-    </main>
+      <div className="flex items-center justify-center">
+        <Map points={points} />
+      </div>
+    </main >
   );
 }

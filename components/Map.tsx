@@ -52,7 +52,7 @@ export default function MapComponent({ points }: MapProps)
             for (const p of safePoints)
             {
                 const marker = L.marker([p.position.latitude, p.position.longitude]);
-                if (p.device?.name) marker.bindPopup(`ID: ${p.device.name}`);
+                if (p.device?.name) marker.bindPopup(p.device.name);
                 marker.addTo(layer);
             }
 
