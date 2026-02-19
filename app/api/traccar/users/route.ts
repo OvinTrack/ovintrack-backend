@@ -7,8 +7,8 @@ export async function GET()
 {
     try
     {
-        const devices = await traccarFetch<TraccarDevice[]>('/api/users');
-        return NextResponse.json(devices ?? []);
+        const users = await traccarFetch<TraccarUser[]>('/api/users');
+        return NextResponse.json(users ?? []);
     }
     catch (error)
     {
