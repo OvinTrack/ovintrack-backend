@@ -16,3 +16,23 @@ export async function GET()
         return NextResponse.json(body, { status });
     }
 }
+
+export async function POST(request : Request)
+{
+    try
+    {
+	const userData = await request.json();
+
+        const user = await traccarFetch<TraccarUser>('/api/users/', {
+	    method: 'POST',
+	    headers: { 'Content-Type': 'application/json' },
+	    body : JSON.stringify(userData)
+	});
+        return NextResponse.json(user ?? {});
+    }
+    catch (error)
+    {
+        const { status, body } = getTraccarErrorPayload(error);
+        return NextResponse.json(body, { status });
+    }
+}
