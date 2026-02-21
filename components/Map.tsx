@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { LayerGroup, Map as LeafletMap } from "leaflet";
 import { Ovin } from "@/types/traccar-types";
+import { renderPopup } from './PopUp';
 
 type MapProps = { readonly points: Ovin[]; };
 
@@ -52,7 +53,11 @@ export default function MapComponent({ points }: MapProps)
             for (const p of safePoints)
             {
                 const marker = L.marker([p.position.latitude, p.position.longitude]);
-                if (p.device?.name) marker.bindPopup(p.device.name);
+		renderPopup(marker, {
+		    title: 'Titre dynamique',
+		    name: p.device?.name ?? 'Mouton',
+		    description: 'Description dynamique ici',
+		});
                 marker.addTo(layer);
             }
 
