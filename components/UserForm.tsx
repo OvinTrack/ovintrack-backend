@@ -1,30 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  readonly: boolean;
-  administrator: boolean;
-  map: string;
-  latitude: number;
-  longitude: number;
-  zoom: number;
-  password: string;
-  coordinateFormat: string;
-  disabled: boolean;
-  expirationTime: string;
-  deviceLimit: number;
-  userLimit: number;
-  deviceReadonly: boolean;
-  limitCommands: boolean;
-  fixedEmail: boolean;
-  poiLayer: string;
-  attributes: Record<string, string>;
-}
+import { FullTraccarUser } from "@/types/traccar-types";
 
 export default function UserForm() {
   const [formData, setFormData] = useState<User>({
