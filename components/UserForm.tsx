@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation"
 import { FullTraccarUser } from "@/types/traccar-types";
 
 export default function UserForm() {
@@ -28,9 +29,10 @@ export default function UserForm() {
     attributes: {}
   });
 
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
-
+    const [message, setMessage] = useState("");
+    const [loading, setLoading] = useState(false);
+    const router = useRouter();
+    
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
 
@@ -63,11 +65,12 @@ export default function UserForm() {
 	if (!response.ok) {
 	    throw new Error(data.message || "Erreur inconnue");;
 	}
-      setMessage("Utilisateur enregistré avec succès.");
+	setMessage("Utilisateur enregistré avec succès.");
+	router.push("/api/traccar/users");
     } catch (error: any) {
-      setMessage(`Erreur : ${error.message}`);
+	setMessage(`Erreur : ${error.message}`);
     } finally {
-      setLoading(false);
+	setLoading(false);
     }
   };
 
