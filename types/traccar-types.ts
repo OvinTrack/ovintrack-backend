@@ -42,7 +42,7 @@ export interface FullTraccarUser extends TraccarUser
     limitCommands: boolean;
     fixedEmail: boolean;
     poiLayer: string;
-    attributes: {};
+    attributes: Record<string, string>;
 }
 
 export interface ApiError

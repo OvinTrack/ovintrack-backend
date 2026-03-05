@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation"
 import { FullTraccarUser } from "@/types/traccar-types";
 
-export default function UserForm() {
-  const [formData, setFormData] = useState<User>({
+export default function UserForm()
+{
+  const [formData, setFormData] = useState<FullTraccarUser>({
     id: 6,
     name: "",
     email: "",
@@ -29,30 +30,43 @@ export default function UserForm() {
     attributes: {}
   });
 
-    const [message, setMessage] = useState("");
-    const [loading, setLoading] = useState(false);
-    const router = useRouter();
-    
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+  {
     const { name, value, type, checked } = e.target;
+
+    let fieldValue: string | number | boolean;
+
+    if (type === "checkbox")
+    {
+      fieldValue = checked;
+    }
+    else if (type === "number")
+    {
+      fieldValue = Number(value);
+    }
+    else
+    {
+      fieldValue = value;
+    }
 
     setFormData(prev => ({
       ...prev,
-      [name]:
-        type === "checkbox"
-          ? checked
-          : type === "number"
-          ? Number(value)
-          : value
+      [name]: fieldValue
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) =>
+  {
     e.preventDefault();
     setLoading(true);
     setMessage("");
 
-    try {
+    try
+    {
       const response = await fetch("/api/traccar/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -60,17 +74,24 @@ export default function UserForm() {
         body: JSON.stringify(formData)
       });
 
-	const data = await response.json();
+      const data = await response.json();
 
-	if (!response.ok) {
-	    throw new Error(data.message || "Erreur inconnue");;
-	}
-	setMessage("Utilisateur enregistré avec succès.");
-	router.push("/api/traccar/users");
-    } catch (error: any) {
-	setMessage(`Erreur : ${error.message}`);
-    } finally {
-	setLoading(false);
+      if (!response.ok)
+      {
+        throw new Error(data.message || "Erreur inconnue");;
+      }
+
+      setMessage("Utilisateur enregistré avec succès.");
+      router.push("/api/traccar/users");
+    }
+    catch (error: unknown)
+    {
+      const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+      setMessage(`Erreur : ${errorMessage}`);
+    }
+    finally
+    {
+      setLoading(false);
     }
   };
 
@@ -82,7 +103,7 @@ export default function UserForm() {
   return (
     <div className="max-w-2xl mx-auto p-8 bg-white shadow-2xl rounded-2xl">
       <h2 className="text-2xl font-semibold mb-8 text-center">
-        Création d'un utilisateur
+        Création d&apos;un utilisateur
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-8">
@@ -92,28 +113,28 @@ export default function UserForm() {
           <h3 className="text-lg font-semibold border-b pb-2">Informations</h3>
 
           <div>
-            <label className={label}>ID</label>
-            <input className={input} type="number" name="id" value={formData.id} onChange={handleChange} />
+            <label htmlFor="id" className={label}>ID</label>
+            <input id="id" className={input} type="number" name="id" placeholder="Entrez l'ID" value={formData.id} onChange={handleChange} />
           </div>
 
           <div>
-            <label className={label}>Nom</label>
-            <input className={input} name="name" value={formData.name} onChange={handleChange} />
+            <label htmlFor="name" className={label}>Nom</label>
+            <input id="name" className={input} name="name" placeholder="Entrez le nom" value={formData.name} onChange={handleChange} />
           </div>
 
           <div>
-            <label className={label}>Email</label>
-            <input className={input} name="email" value={formData.email} onChange={handleChange} />
+            <label htmlFor="email" className={label}>Email</label>
+            <input id="email" className={input} name="email" placeholder="Entrez l'email" value={formData.email} onChange={handleChange} />
           </div>
 
           <div>
-            <label className={label}>Téléphone</label>
-            <input className={input} name="phone" value={formData.phone} onChange={handleChange} />
+            <label htmlFor="phone" className={label}>Téléphone</label>
+            <input id="phone" className={input} name="phone" placeholder="Entrez le téléphone" value={formData.phone} onChange={handleChange} />
           </div>
 
           <div>
-            <label className={label}>Mot de passe</label>
-            <input className={input} type="password" name="password" value={formData.password} onChange={handleChange} />
+            <label htmlFor="password" className={label}>Mot de passe</label>
+            <input id="password" className={input} type="password" name="password" placeholder="Entrez le mot de passe" value={formData.password} onChange={handleChange} />
           </div>
         </section>
 
@@ -122,23 +143,23 @@ export default function UserForm() {
           <h3 className="text-lg font-semibold border-b pb-2">Localisation</h3>
 
           <div>
-            <label className={label}>Map</label>
-            <input className={input} name="map" value={formData.map} onChange={handleChange} />
+            <label htmlFor="map" className={label}>Map</label>
+            <input id="map" className={input} name="map" placeholder="Entrez la carte" value={formData.map} onChange={handleChange} />
           </div>
 
           <div>
-            <label className={label}>Latitude</label>
-            <input className={input} type="number" name="latitude" value={formData.latitude} onChange={handleChange} />
+            <label htmlFor="latitude" className={label}>Latitude</label>
+            <input id="latitude" className={input} type="number" name="latitude" placeholder="Latitude" value={formData.latitude} onChange={handleChange} />
           </div>
 
           <div>
-            <label className={label}>Longitude</label>
-            <input className={input} type="number" name="longitude" value={formData.longitude} onChange={handleChange} />
+            <label htmlFor="longitude" className={label}>Longitude</label>
+            <input id="longitude" className={input} type="number" name="longitude" placeholder="Longitude" value={formData.longitude} onChange={handleChange} />
           </div>
 
           <div>
-            <label className={label}>Zoom</label>
-            <input className={input} type="number" name="zoom" value={formData.zoom} onChange={handleChange} />
+            <label htmlFor="zoom" className={label}>Zoom</label>
+            <input id="zoom" className={input} type="number" name="zoom" placeholder="Niveau de zoom" value={formData.zoom} onChange={handleChange} />
           </div>
         </section>
 
@@ -147,24 +168,26 @@ export default function UserForm() {
           <h3 className="text-lg font-semibold border-b pb-2">Configuration</h3>
 
           <div>
-            <label className={label}>Format des coordonnées</label>
-            <input className={input} name="coordinateFormat" value={formData.coordinateFormat} onChange={handleChange} />
+            <label htmlFor="coordinateFormat" className={label}>Format des coordonnées</label>
+            <input id="coordinateFormat" className={input} name="coordinateFormat" placeholder="Format des coordonnées" value={formData.coordinateFormat} onChange={handleChange} />
           </div>
 
           <div>
-            <label className={label}>Date d'expiration</label>
+            <label htmlFor="expirationTime" className={label}>Date d&apos;expiration</label>
             <input
+              id="expirationTime"
               className={input}
               type="datetime-local"
               name="expirationTime"
+              placeholder="Date d'expiration"
               value={formData.expirationTime}
               onChange={handleChange}
             />
           </div>
 
           <div>
-            <label className={label}>POI Layer</label>
-            <input className={input} name="poiLayer" value={formData.poiLayer} onChange={handleChange} />
+            <label htmlFor="poiLayer" className={label}>POI Layer</label>
+            <input id="poiLayer" className={input} name="poiLayer" placeholder="POI Layer" value={formData.poiLayer} onChange={handleChange} />
           </div>
         </section>
 
@@ -173,13 +196,13 @@ export default function UserForm() {
           <h3 className="text-lg font-semibold border-b pb-2">Limites</h3>
 
           <div>
-            <label className={label}>Limite d'appareils</label>
-            <input className={input} type="number" name="deviceLimit" value={formData.deviceLimit} onChange={handleChange} />
+            <label htmlFor="deviceLimit" className={label}>Limite d&apos;appareils</label>
+            <input id="deviceLimit" className={input} type="number" name="deviceLimit" placeholder="Limite d'appareils" value={formData.deviceLimit} onChange={handleChange} />
           </div>
 
           <div>
-            <label className={label}>Limite d'utilisateurs</label>
-            <input className={input} type="number" name="userLimit" value={formData.userLimit} onChange={handleChange} />
+            <label htmlFor="userLimit" className={label}>Limite d&apos;utilisateurs</label>
+            <input id="userLimit" className={input} type="number" name="userLimit" placeholder="Limite d'utilisateurs" value={formData.userLimit} onChange={handleChange} />
           </div>
         </section>
 
@@ -199,7 +222,7 @@ export default function UserForm() {
               <input
                 type="checkbox"
                 name={item.key}
-                checked={(formData as any)[item.key]}
+                checked={Boolean(formData[item.key as keyof FullTraccarUser])}
                 onChange={handleChange}
                 className="h-4 w-4"
               />

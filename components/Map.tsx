@@ -53,11 +53,11 @@ export default function MapComponent({ points }: MapProps)
             for (const p of safePoints)
             {
                 const marker = L.marker([p.position.latitude, p.position.longitude]);
-		renderPopup(marker, {
-		    title: 'Titre dynamique',
-		    name: p.device?.name ?? 'Mouton',
-		    description: 'Description dynamique ici',
-		});
+                renderPopup(marker, {
+                    title: 'Titre dynamique',
+                    name: p.device?.name ?? 'Mouton',
+                    description: 'Description dynamique ici',
+                });
                 marker.addTo(layer);
             }
 
