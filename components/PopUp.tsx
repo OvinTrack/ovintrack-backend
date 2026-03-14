@@ -4,9 +4,10 @@ import ReactDOM from 'react-dom/client';
 
 interface PopUpProps
 {
-  title: string;
-  name: string;
-  description: string;
+    title: string;
+    uniqueId : string; // champ de Traccar
+    DZId: string;
+    status: string;
 }
 
 export function renderPopup(marker: L.Marker, props: PopUpProps)
@@ -19,8 +20,9 @@ export function renderPopup(marker: L.Marker, props: PopUpProps)
   root.render(
     <>
       <h3>{props.title}</h3>
-      <p>{props.name}</p>
-      <p>{props.description}</p>
+      <p>uniqueId : {props.uniqueId}</p>
+      <p>DZId : {props.DZId}</p>
+      <p>statut : {props.status}</p>
     </>
 
   );

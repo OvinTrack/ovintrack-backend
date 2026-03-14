@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import type { Ovin, TraccarDevice, TraccarPosition } from '@/types/traccar-types';
+import type { Ovin, FullTraccarDevice, TraccarPosition } from '@/types/traccar-types';
 import { getTraccarErrorPayload, traccarFetch } from '@/lib/traccar-session';
 
 export async function GET()
 {
     try
     {
-        const devices = await traccarFetch<TraccarDevice[]>('/api/devices') ?? [];
+        const devices = await traccarFetch<FullTraccarDevice[]>('/api/devices') ?? [];
 
         const result: Ovin[] = [];
 
@@ -17,7 +17,8 @@ export async function GET()
             if (positions.length !== 0)
             {
                 const ovin: Ovin = {
-                    device, position: positions[0],
+                    device,
+		    position: positions[0],
                 };
 
                 result.push(ovin);

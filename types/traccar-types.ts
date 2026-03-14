@@ -5,6 +5,11 @@ export interface TraccarDevice
     uniqueId: string;
 }
 
+export interface FullTraccarDevice extends TraccarDevice
+{
+    attributes : Record<string, string>; // Traccar permettrait <string, string|boolean|number>
+}
+
 export interface TraccarPosition
 {
     id: number;
@@ -52,6 +57,6 @@ export interface ApiError
 
 export interface Ovin
 {
-    device: TraccarDevice;
+    device: FullTraccarDevice;
     position: TraccarPosition;
 }
