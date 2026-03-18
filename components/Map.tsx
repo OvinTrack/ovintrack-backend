@@ -55,7 +55,7 @@ export default function MapComponent({ points }: MapProps)
                 const marker = L.marker([p.position.latitude, p.position.longitude]);
                 renderPopup(marker, {
                     title: p.device?.name ?? 'Nom inconnu',
-		    uniqueId: p.device?.uniqueId ?? 'uniqueId inconnu',
+                    uniqueId: p.device?.uniqueId ?? 'uniqueId inconnu',
                     DZId: p.device.attributes?.DZId ?? 'DZId inconnu',
                     status: p.device.attributes?.statut ?? 'Statut vaccinal inconnnu', // Les clef sont en fr (statut) dans Traccar et en (status) en dans ovin-track
                 });
