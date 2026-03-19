@@ -1,119 +1,64 @@
 'use client';
 
-import { useState } from 'react';
-import type { ApiError, Ovin } from '@/types/traccar-types';
+import { useEffect, useState } from 'react';
+import type { Ovin } from '@/types/traccar-types';
 import Map from "@/components/Map";
+import { SESSION_CHANGED_EVENT } from '@/lib/utils';
 
 export default function TraccarLoginPage()
 {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(false);
   const [points, setPoints] = useState<Ovin[]>([]);
 
-  const onSubmit = async () =>
+  useEffect(() =>
   {
-    setLoading(true);
-    setMessage('');
-
-    try
+    const syncPointsWithSession = async () =>
     {
-      const loginResponse = await fetch('/api/traccar/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!loginResponse.ok)
+      try
       {
-        const errorPayload = await loginResponse.json() as ApiError;
-        throw new Error(errorPayload.message ?? 'Login failed');
+        const session = await fetch('/api/session').then((r) => r.json()) as { token?: string };
+
+        if (!session.token)
+        {
+          setPoints([]);
+          return;
+        }
+
+        const ovinsResponse = await fetch('/api/ovins');
+        if (!ovinsResponse.ok)
+        {
+          setPoints([]);
+          return;
+        }
+
+        const ovins = await ovinsResponse.json() as Ovin[];
+        setPoints(ovins);
       }
+      catch
+      {
+        setPoints([]);
+      }
+    };
 
-      setMessage('Connected to Traccar.');
-      const ovins = await fetch('/api/ovins').then((response) => response.json()) as Ovin[];
-      setPoints(ovins);
-    }
-    catch (error)
-    {
-      setMessage(error instanceof Error ? error.message : 'Unexpected error');
-    }
-    finally
-    {
-      setLoading(false);
-    }
-  };
+    void syncPointsWithSession();
 
-  const logout = async () =>
-  {
-    setLoading(true);
-
-    try
+    const onSessionChanged = () =>
     {
-      await fetch('/api/traccar/logout', {
-        method: 'POST',
-      });
+      void syncPointsWithSession();
+    };
 
-      setMessage('Logged out.');
-      setPoints([]);
-      globalThis.location.reload();
-    }
-    finally
+    globalThis.addEventListener(SESSION_CHANGED_EVENT, onSessionChanged);
+
+    return () =>
     {
-      setLoading(false);
-    }
-  };
+      globalThis.removeEventListener(SESSION_CHANGED_EVENT, onSessionChanged);
+    };
+  }, []);
 
   return (
-    <main className="mx-auto w-screen h-screen items-center bg-zinc-50 font-sans dark:bg-black flex flex-col p-5">
-      <div className="flex items-center justify-center bg-zinc-50 font-sans dark:bg-black w-full mb-10">
-        <h1 className="text-4xl font-bold w-full text-center">OVIN-TRACK</h1>
-      </div>
-      <div className="space-y-3 w-xl min-h-50 border border-white rounded-2xl p-5">
-
-        <input
-          className="w-full rounded border p-2"
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          required />
-
-        <input
-          className="w-full rounded border p-2"
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          required />
-
-        <div className="flex gap-2 justify-end">
-          <div className="flex-1">
-            {message && <p className="text-sm">{message}</p>}
-          </div>
-          <button
-            className="rounded border px-3 py-2 disabled:opacity-50 cursor-pointer"
-            type="submit"
-            onClick={onSubmit}
-            disabled={loading}>
-            {loading ? 'Loading...' : 'Login'}
-          </button>
-          <button
-            className="rounded border px-3 py-2 disabled:opacity-50 cursor-pointer"
-            type="button"
-            onClick={logout}
-            disabled={loading}>
-            Logout
-          </button>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-center">
+    <main className="overflow-hidden">
+      <div className="flex w-full flex-1 items-center justify-center">
         <Map points={points} />
       </div>
-    </main >
+    </main>
   );
 }

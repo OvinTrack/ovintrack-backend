@@ -104,6 +104,17 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
     }
   };
 
+  let btnLabel = "Créer";
+
+  if (loading)
+  {
+    btnLabel = "Envoi...";
+  }
+  else if (isEditing)
+  {
+    btnLabel = "Mettre à jour";
+  }
+
   const input =
     "w-full rounded-xl border border-gray-300 text-gray-700 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500";
 
@@ -171,7 +182,7 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
             type="submit"
             disabled={loading}
             className="flex-1 bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition disabled:opacity-50">
-            {loading ? "Envoi..." : isEditing ? "Mettre à jour" : "Créer"}
+            {btnLabel}
           </button>
         </div>
       </form>

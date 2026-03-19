@@ -1,0 +1,1 @@
+export const SESSION_CHANGED_EVENT = 'traccar-session-changed';

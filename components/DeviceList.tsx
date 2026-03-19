@@ -186,11 +186,12 @@ export default function DeviceList()
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Gestion des appareils</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-semibold">Gestion des appareils</h1>
+        </div>
         <button
           onClick={handleCreate}
-          className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition"
-        >
+          className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition">
           + Nouvel appareil
         </button>
       </div>
