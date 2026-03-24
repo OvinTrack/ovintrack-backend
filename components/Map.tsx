@@ -57,7 +57,7 @@ export default function MapComponent({ points }: MapProps)
                     title: p.device?.name ?? 'Nom inconnu',
                     uniqueId: p.device?.uniqueId ?? 'uniqueId inconnu',
                     DZId: p.device.attributes?.DZId ?? 'DZId inconnu',
-                    status: p.device.attributes?.statut ?? 'Statut vaccinal inconnnu', // Les clef sont en fr (statut) dans Traccar et en (status) en dans ovin-track
+                    status: p.device.attributes?.status ?? p.device.attributes?.statut ?? 'Statut vaccinal inconnnu',
                 });
                 marker.addTo(layer);
             }

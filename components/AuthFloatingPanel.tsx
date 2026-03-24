@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { ApiError } from '@/types/traccar-types';
 import { SESSION_CHANGED_EVENT } from '@/lib/utils';
+import { redirect } from 'next/navigation';
 
 
 export default function AuthFloatingPanel()
@@ -89,6 +90,7 @@ export default function AuthFloatingPanel()
         finally
         {
             setLoading(false);
+            redirect('/'); // Redirige vers la page d'accueil après le logout
         }
     };
 
@@ -96,8 +98,7 @@ export default function AuthFloatingPanel()
         <div className="fixed right-3 top-3 z-1001 w-[min(22rem,calc(100vw-1.5rem))] rounded-2xl border border-zinc-200 bg-white/90 shadow-lg backdrop-blur sm:right-4 sm:top-4 dark:border-zinc-700 dark:bg-zinc-950/90">
             <button
                 className="flex w-full items-center justify-between px-4 py-3 text-left"
-                onClick={() => setOpen((o) => !o)}
-            >
+                onClick={() => setOpen((o) => !o)}>
                 <span className="text-sm font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
                     {isLoggedIn ? '● Connecte' : 'Session Traccar'}
                 </span>
@@ -108,17 +109,15 @@ export default function AuthFloatingPanel()
                 <div className="space-y-3 border-t border-zinc-200 px-4 pb-4 pt-3 dark:border-zinc-700">
                     {isLoggedIn ? (
                         <div className="space-y-3">
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="flex flex-col gap-2">
                                 <Link
                                     href="/"
-                                    className="rounded border px-3 py-2 text-center text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                                >
+                                    className="rounded border px-3 py-2 text-center text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800">
                                     Carte
                                 </Link>
                                 <Link
                                     href="/devices"
-                                    className="rounded border px-3 py-2 text-center text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                                >
+                                    className="rounded border px-3 py-2 text-center text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800">
                                     Appareils
                                 </Link>
                             </div>
@@ -131,8 +130,7 @@ export default function AuthFloatingPanel()
                                     className="rounded border px-3 py-2 disabled:opacity-50 cursor-pointer"
                                     type="button"
                                     onClick={logout}
-                                    disabled={loading}
-                                >
+                                    disabled={loading}>
                                     {loading ? 'Chargement...' : 'Logout'}
                                 </button>
                             </div>
@@ -145,8 +143,7 @@ export default function AuthFloatingPanel()
                                 placeholder="Email"
                                 value={email}
                                 onChange={(event) => setEmail(event.target.value)}
-                                required
-                            />
+                                required />
 
                             <input
                                 className="w-full rounded border p-2"
@@ -154,8 +151,7 @@ export default function AuthFloatingPanel()
                                 placeholder="Mot de passe"
                                 value={password}
                                 onChange={(event) => setPassword(event.target.value)}
-                                required
-                            />
+                                required />
 
                             <div className="flex gap-2 justify-end">
                                 <div className="flex-1">
@@ -165,8 +161,7 @@ export default function AuthFloatingPanel()
                                     className="rounded border px-3 py-2 disabled:opacity-50 cursor-pointer"
                                     type="submit"
                                     onClick={onSubmit}
-                                    disabled={loading}
-                                >
+                                    disabled={loading}>
                                     {loading ? 'Chargement...' : 'Login'}
                                 </button>
                             </div>

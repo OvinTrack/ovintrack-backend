@@ -17,7 +17,7 @@ export default function UserForm()
     latitude: 0,
     longitude: 0,
     zoom: 0,
-    password: "string",
+    password: "",
     coordinateFormat: "string",
     disabled: true,
     expirationTime: "2019-08-24T14:15",
@@ -96,40 +96,44 @@ export default function UserForm()
   };
 
   const input =
-    "w-full rounded-xl border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500";
+    "w-full rounded-xl border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700";
 
   const label = "block text-sm font-medium text-gray-700 mb-1";
 
   return (
-    <div className="max-w-2xl mx-auto p-8 bg-white shadow-2xl rounded-2xl">
-      <h2 className="text-2xl font-semibold mb-8 text-center">
+    <div className="max-w-3xl mx-auto p-4 sm:p-6 md:p-8 bg-white text-gray-700 shadow-2xl rounded-2xl">
+      <h2 className="text-xl sm:text-2xl font-semibold mb-6 sm:mb-8 text-center">
         Création d&apos;un utilisateur
       </h2>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
 
         {/* Informations principales */}
         <section className="space-y-4">
           <h3 className="text-lg font-semibold border-b pb-2">Informations</h3>
 
-          <div>
-            <label htmlFor="id" className={label}>ID</label>
-            <input id="id" className={input} type="number" name="id" placeholder="Entrez l'ID" value={formData.id} onChange={handleChange} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="id" className={label}>ID</label>
+              <input id="id" className={input} type="number" name="id" placeholder="Entrez l'ID" value={formData.id} onChange={handleChange} />
+            </div>
+
+            <div>
+              <label htmlFor="name" className={label}>Nom</label>
+              <input id="name" className={input} name="name" placeholder="Entrez le nom" value={formData.name} onChange={handleChange} />
+            </div>
           </div>
 
-          <div>
-            <label htmlFor="name" className={label}>Nom</label>
-            <input id="name" className={input} name="name" placeholder="Entrez le nom" value={formData.name} onChange={handleChange} />
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="email" className={label}>Email</label>
+              <input id="email" className={input} name="email" placeholder="Entrez l'email" value={formData.email} onChange={handleChange} />
+            </div>
 
-          <div>
-            <label htmlFor="email" className={label}>Email</label>
-            <input id="email" className={input} name="email" placeholder="Entrez l'email" value={formData.email} onChange={handleChange} />
-          </div>
-
-          <div>
-            <label htmlFor="phone" className={label}>Téléphone</label>
-            <input id="phone" className={input} name="phone" placeholder="Entrez le téléphone" value={formData.phone} onChange={handleChange} />
+            <div>
+              <label htmlFor="phone" className={label}>Téléphone</label>
+              <input id="phone" className={input} name="phone" placeholder="Entrez le téléphone" value={formData.phone} onChange={handleChange} />
+            </div>
           </div>
 
           <div>
@@ -147,19 +151,21 @@ export default function UserForm()
             <input id="map" className={input} name="map" placeholder="Entrez la carte" value={formData.map} onChange={handleChange} />
           </div>
 
-          <div>
-            <label htmlFor="latitude" className={label}>Latitude</label>
-            <input id="latitude" className={input} type="number" name="latitude" placeholder="Latitude" value={formData.latitude} onChange={handleChange} />
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label htmlFor="latitude" className={label}>Latitude</label>
+              <input id="latitude" className={input} type="number" name="latitude" placeholder="Latitude" value={formData.latitude} onChange={handleChange} />
+            </div>
 
-          <div>
-            <label htmlFor="longitude" className={label}>Longitude</label>
-            <input id="longitude" className={input} type="number" name="longitude" placeholder="Longitude" value={formData.longitude} onChange={handleChange} />
-          </div>
+            <div>
+              <label htmlFor="longitude" className={label}>Longitude</label>
+              <input id="longitude" className={input} type="number" name="longitude" placeholder="Longitude" value={formData.longitude} onChange={handleChange} />
+            </div>
 
-          <div>
-            <label htmlFor="zoom" className={label}>Zoom</label>
-            <input id="zoom" className={input} type="number" name="zoom" placeholder="Niveau de zoom" value={formData.zoom} onChange={handleChange} />
+            <div>
+              <label htmlFor="zoom" className={label}>Zoom</label>
+              <input id="zoom" className={input} type="number" name="zoom" placeholder="Niveau de zoom" value={formData.zoom} onChange={handleChange} />
+            </div>
           </div>
         </section>
 
@@ -195,14 +201,16 @@ export default function UserForm()
         <section className="space-y-4">
           <h3 className="text-lg font-semibold border-b pb-2">Limites</h3>
 
-          <div>
-            <label htmlFor="deviceLimit" className={label}>Limite d&apos;appareils</label>
-            <input id="deviceLimit" className={input} type="number" name="deviceLimit" placeholder="Limite d'appareils" value={formData.deviceLimit} onChange={handleChange} />
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="deviceLimit" className={label}>Limite d&apos;appareils</label>
+              <input id="deviceLimit" className={input} type="number" name="deviceLimit" placeholder="Limite d'appareils" value={formData.deviceLimit} onChange={handleChange} />
+            </div>
 
-          <div>
-            <label htmlFor="userLimit" className={label}>Limite d&apos;utilisateurs</label>
-            <input id="userLimit" className={input} type="number" name="userLimit" placeholder="Limite d'utilisateurs" value={formData.userLimit} onChange={handleChange} />
+            <div>
+              <label htmlFor="userLimit" className={label}>Limite d&apos;utilisateurs</label>
+              <input id="userLimit" className={input} type="number" name="userLimit" placeholder="Limite d'utilisateurs" value={formData.userLimit} onChange={handleChange} />
+            </div>
           </div>
         </section>
 
@@ -210,25 +218,27 @@ export default function UserForm()
         <section className="space-y-4">
           <h3 className="text-lg font-semibold border-b pb-2">Permissions</h3>
 
-          {[
-            { key: "readonly", label: "Lecture seule" },
-            { key: "administrator", label: "Administrateur" },
-            { key: "disabled", label: "Désactivé" },
-            { key: "deviceReadonly", label: "Appareils en lecture seule" },
-            { key: "limitCommands", label: "Limiter les commandes" },
-            { key: "fixedEmail", label: "Email fixe" }
-          ].map(item => (
-            <label key={item.key} className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                name={item.key}
-                checked={Boolean(formData[item.key as keyof FullTraccarUser])}
-                onChange={handleChange}
-                className="h-4 w-4"
-              />
-              <span>{item.label}</span>
-            </label>
-          ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              { key: "readonly", label: "Lecture seule" },
+              { key: "administrator", label: "Administrateur" },
+              { key: "disabled", label: "Désactivé" },
+              { key: "deviceReadonly", label: "Appareils en lecture seule" },
+              { key: "limitCommands", label: "Limiter les commandes" },
+              { key: "fixedEmail", label: "Email fixe" }
+            ].map(item => (
+              <label key={item.key} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition">
+                <input
+                  type="checkbox"
+                  name={item.key}
+                  checked={Boolean(formData[item.key as keyof FullTraccarUser])}
+                  onChange={handleChange}
+                  className="h-5 w-5"
+                />
+                <span>{item.label}</span>
+              </label>
+            ))}
+          </div>
         </section>
 
         <button

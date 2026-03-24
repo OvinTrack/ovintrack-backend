@@ -17,7 +17,8 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
   const [formData, setFormData] = useState({
     name: device?.name ?? "",
     uniqueId: device?.uniqueId ?? "",
-    attributes: device?.attributes ? JSON.stringify(device.attributes, null, 2) : "",
+    DZId: device?.attributes?.DZId ?? "",
+    status: device?.attributes?.status ?? device?.attributes?.statut ?? "",
   });
 
   const [message, setMessage] = useState("");
@@ -49,26 +50,32 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
       return;
     }
 
-    let attributes: Record<string, string> | undefined;
+    const DZId = formData.DZId.trim();
+    const status = formData.status.trim();
 
-    if (formData.attributes.trim())
+    const baseAttributes = device?.attributes ?? {};
+    const attributes: Record<string, string> = {
+      ...baseAttributes,
+      ...(DZId && { DZId }),
+      ...(status && { status }),
+    };
+
+    // Avoid sending stale keys if user clears a field.
+    if (!DZId)
     {
-      try
-      {
-        attributes = JSON.parse(formData.attributes) as Record<string, string>;
-      }
-      catch
-      {
-        setMessage("Erreur : Les attributs doivent être un JSON valide.");
-        setLoading(false);
-        return;
-      }
+      delete attributes.DZId;
+    }
+
+    if (!status)
+    {
+      delete attributes.status;
+      delete attributes.statut;
     }
 
     const payload = {
       name: formData.name.trim(),
       uniqueId: formData.uniqueId.trim(),
-      ...(attributes !== undefined && { attributes }),
+      ...(Object.keys(attributes).length > 0 && { attributes }),
     };
 
     try
@@ -152,17 +159,27 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
         </div>
 
         <div>
-          <label htmlFor="attributes" className={label}>
-            Attributs <span className="text-gray-400 font-normal">(JSON optionnel)</span>
-          </label>
-          <textarea
-            id="attributes"
-            className={`${input} font-mono text-sm resize-y min-h-20`}
-            name="attributes"
-            placeholder='{"clé": "valeur"}'
-            value={formData.attributes}
+          <label htmlFor="DZId" className={label}>DZId</label>
+          <input
+            id="DZId"
+            className={input}
+            name="DZId"
+            placeholder="DZId"
+            value={formData.DZId}
             onChange={handleChange}
-            rows={3} />
+          />
+        </div>
+
+        <div>
+          <label htmlFor="status" className={label}>Status</label>
+          <input
+            id="status"
+            className={input}
+            name="status"
+            placeholder="Status"
+            value={formData.status}
+            onChange={handleChange}
+          />
         </div>
 
         {message && (

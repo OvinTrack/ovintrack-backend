@@ -88,6 +88,7 @@ export default function DeviceList()
     }
 
     setDeletingId(device.id);
+
     try
     {
       const response = await fetch(`/api/traccar/devices/${device.id}`, {
@@ -136,7 +137,7 @@ export default function DeviceList()
     {
       return (
         <div className="text-center py-12 text-gray-400 bg-white rounded-2xl shadow">
-          Aucun appareil trouvé.é&nbsp;<button onClick={handleCreate} className="ml-2 text-blue-600 underline hover:no-underline">
+          Aucun appareil trouvé.&nbsp;<button onClick={handleCreate} className="ml-2 text-blue-600 underline hover:no-underline">
             Créer le premier
           </button>
         </div>
@@ -145,40 +146,69 @@ export default function DeviceList()
 
     return (
       <div className="bg-white shadow-md rounded-2xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="text-left px-6 py-3 font-semibold text-gray-600">ID</th>
-              <th className="text-left px-6 py-3 font-semibold text-gray-600">Nom</th>
-              <th className="text-left px-6 py-3 font-semibold text-gray-600">Identifiant unique</th>
-              <th className="text-right px-6 py-3 font-semibold text-gray-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {devices.map(device => (
-              <tr key={device.id} className="hover:bg-gray-50 transition">
-                <td className="px-6 py-4 text-gray-400 font-mono">{device.id}</td>
-                <td className="px-6 py-4 font-medium text-gray-900">{device.name}</td>
-                <td className="px-6 py-4 text-gray-600 font-mono">{device.uniqueId}</td>
-                <td className="px-6 py-4 text-right space-x-2">
-                  <button
-                    onClick={() => handleEdit(device)}
-                    className="text-blue-600 hover:text-blue-800 px-3 py-1 rounded-lg hover:bg-blue-50 transition"
-                  >
-                    Modifier
-                  </button>
-                  <button
-                    onClick={() => void handleDelete(device)}
-                    disabled={deletingId === device.id}
-                    className="text-red-600 hover:text-red-800 px-3 py-1 rounded-lg hover:bg-red-50 transition disabled:opacity-50"
-                  >
-                    {deletingId === device.id ? "Suppression..." : "Supprimer"}
-                  </button>
-                </td>
+        <div className="md:hidden divide-y divide-gray-100">
+          {devices.map(device => (
+            <div key={device.id} className="p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs text-gray-400">ID: <span className="font-mono">{device.id}</span></p>
+                  <p className="text-base font-semibold text-gray-900 mt-1 wrap-break-word">{device.name}</p>
+                  <p className="text-sm text-gray-600 font-mono mt-1 break-all">{device.uniqueId}</p>
+                </div>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <button
+                  onClick={() => handleEdit(device)}
+                  className="flex-1 text-blue-600 border border-blue-200 hover:text-blue-800 px-3 py-2 rounded-lg hover:bg-blue-50 transition"
+                >
+                  Modifier
+                </button>
+                <button
+                  onClick={() => void handleDelete(device)}
+                  disabled={deletingId === device.id}
+                  className="flex-1 text-red-600 border border-red-200 hover:text-red-800 px-3 py-2 rounded-lg hover:bg-red-50 transition disabled:opacity-50"
+                >
+                  {deletingId === device.id ? "Suppression..." : "Supprimer"}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="text-left px-6 py-3 font-semibold text-gray-600">ID</th>
+                <th className="text-left px-6 py-3 font-semibold text-gray-600">Nom</th>
+                <th className="text-left px-6 py-3 font-semibold text-gray-600">Identifiant unique</th>
+                <th className="text-right px-6 py-3 font-semibold text-gray-600">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {devices.map(device => (
+                <tr key={device.id} className="hover:bg-gray-50 transition">
+                  <td className="px-6 py-4 text-gray-400 font-mono">{device.id}</td>
+                  <td className="px-6 py-4 font-medium text-gray-900">{device.name}</td>
+                  <td className="px-6 py-4 text-gray-600 font-mono">{device.uniqueId}</td>
+                  <td className="px-6 py-4 text-right space-x-2">
+                    <button
+                      onClick={() => handleEdit(device)}
+                      className="text-blue-600 hover:text-blue-800 px-3 py-1 rounded-lg hover:bg-blue-50 transition">
+                      Modifier
+                    </button>
+                    <button
+                      onClick={() => void handleDelete(device)}
+                      disabled={deletingId === device.id}
+                      className="text-red-600 hover:text-red-800 px-3 py-1 rounded-lg hover:bg-red-50 transition disabled:opacity-50">
+                      {deletingId === device.id ? "Suppression..." : "Supprimer"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     );
   };
