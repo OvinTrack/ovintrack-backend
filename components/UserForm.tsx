@@ -1,62 +1,42 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation"
-import { FullTraccarUser } from "@/types/traccar-types";
+import type { FullTraccarUser } from "@/types/traccar-types";
 
-export default function UserForm()
+interface UserFormProps
 {
-  const [formData, setFormData] = useState<FullTraccarUser>({
-    id: 6,
-    name: "",
-    email: "",
-    phone: "",
-    readonly: true,
-    administrator: false,
-    map: "string",
-    latitude: 0,
-    longitude: 0,
-    zoom: 0,
+  user?: FullTraccarUser;
+  onSuccess: (user: FullTraccarUser) => void;
+  onCancel: () => void;
+}
+
+export default function UserForm({ user, onSuccess, onCancel }: Readonly<UserFormProps>)
+{
+  const isEditing = user !== undefined;
+
+  const [formData, setFormData] = useState({
+    name: user?.name ?? "",
+    email: user?.email ?? "",
     password: "",
-    coordinateFormat: "string",
-    disabled: true,
-    expirationTime: "2019-08-24T14:15",
-    deviceLimit: 0,
-    userLimit: 0,
-    deviceReadonly: true,
-    limitCommands: true,
-    fixedEmail: true,
-    poiLayer: "string",
-    attributes: {}
+    phone: user?.phone ?? "",
+    administrator: user?.administrator ?? false,
+    disabled: user?.disabled ?? false,
+    deviceLimit: user?.deviceLimit ?? -1,
+    userLimit: user?.userLimit ?? 0,
   });
 
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
   {
     const { name, value, type, checked } = e.target;
-
     let fieldValue: string | number | boolean;
+    if (type === "checkbox") fieldValue = checked;
+    else if (type === "number") fieldValue = Number(value);
+    else fieldValue = value;
 
-    if (type === "checkbox")
-    {
-      fieldValue = checked;
-    }
-    else if (type === "number")
-    {
-      fieldValue = Number(value);
-    }
-    else
-    {
-      fieldValue = value;
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      [name]: fieldValue
-    }));
+    setFormData(prev => ({ ...prev, [name]: fieldValue }));
   };
 
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) =>
@@ -65,29 +45,66 @@ export default function UserForm()
     setLoading(true);
     setMessage("");
 
+    if (!formData.name.trim())
+    {
+      setMessage("Erreur : Le nom est requis.");
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.email.trim())
+    {
+      setMessage("Erreur : L'email est requis.");
+      setLoading(false);
+      return;
+    }
+
+    if (!isEditing && !formData.password.trim())
+    {
+      setMessage("Erreur : Le mot de passe est requis.");
+      setLoading(false);
+      return;
+    }
+
+    const payload: Record<string, unknown> = {
+      name: formData.name.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone.trim(),
+      administrator: formData.administrator,
+      disabled: formData.disabled,
+      deviceLimit: formData.deviceLimit,
+      userLimit: formData.userLimit,
+    };
+
+    // N'envoie le mot de passe que si renseigné (obligatoire à la création, optionnel en édition)
+    if (formData.password.trim())
+    {
+      payload.password = formData.password.trim();
+    }
+
     try
     {
-      const response = await fetch("/api/traccar/users", {
-        method: "POST",
+      const url = isEditing ? `/api/traccar/users/${user.id}` : "/api/traccar/users";
+
+      const response = await fetch(url, {
+        method: isEditing ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      const data = await response.json() as FullTraccarUser & { message?: string };
 
       if (!response.ok)
       {
-        throw new Error(data.message || "Erreur inconnue");;
+        throw new Error(data.message ?? "Erreur inconnue");
       }
 
-      setMessage("Utilisateur enregistré avec succès.");
-      router.push("/api/traccar/users");
+      onSuccess(data);
     }
     catch (error: unknown)
     {
-      const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
-      setMessage(`Erreur : ${errorMessage}`);
+      setMessage(`Erreur : ${error instanceof Error ? error.message : "Erreur inconnue"}`);
     }
     finally
     {
@@ -95,163 +112,136 @@ export default function UserForm()
     }
   };
 
+  let btnLabel = "Créer";
+  if (loading) btnLabel = "Envoi...";
+  else if (isEditing) btnLabel = "Mettre à jour";
+
   const input =
-    "w-full rounded-xl border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700";
+    "w-full rounded-xl border border-gray-300 text-gray-700 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500";
 
   const label = "block text-sm font-medium text-gray-700 mb-1";
 
   return (
-    <div className="max-w-3xl mx-auto p-4 sm:p-6 md:p-8 bg-white text-gray-700 shadow-2xl rounded-2xl">
-      <h2 className="text-xl sm:text-2xl font-semibold mb-6 sm:mb-8 text-center">
-        Création d&apos;un utilisateur
+    <div className="max-w-lg mx-auto p-8 bg-white shadow-2xl rounded-2xl">
+      <h2 className="text-2xl font-semibold mb-8 text-center text-gray-700">
+        {isEditing ? "Modifier l'utilisateur" : "Créer un utilisateur"}
       </h2>
 
-      <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <label htmlFor="name" className={label}>Nom <span className="text-red-500">*</span></label>
+          <input
+            id="name"
+            className={input}
+            name="name"
+            placeholder="Nom complet"
+            value={formData.name}
+            onChange={handleChange}
+            required />
+        </div>
 
-        {/* Informations principales */}
-        <section className="space-y-4">
-          <h3 className="text-lg font-semibold border-b pb-2">Informations</h3>
+        <div>
+          <label htmlFor="email" className={label}>Email <span className="text-red-500">*</span></label>
+          <input
+            id="email"
+            className={input}
+            type="email"
+            name="email"
+            placeholder="adresse@exemple.com"
+            value={formData.email}
+            onChange={handleChange}
+            required />
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="id" className={label}>ID</label>
-              <input id="id" className={input} type="number" name="id" placeholder="Entrez l'ID" value={formData.id} onChange={handleChange} />
-            </div>
+        <div>
+          <label htmlFor="password" className={label}>
+            Mot de passe {!isEditing && <span className="text-red-500">*</span>}
+            {isEditing && (
+              <span className="text-gray-400 font-normal"> (laisser vide pour conserver l&apos;actuel)</span>
+            )}
+          </label>
+          <input
+            id="password"
+            className={input}
+            type="password"
+            name="password"
+            placeholder={isEditing ? "Nouveau mot de passe (optionnel)" : "Mot de passe"}
+            value={formData.password}
+            onChange={handleChange}
+            autoComplete="new-password" />
+        </div>
 
-            <div>
-              <label htmlFor="name" className={label}>Nom</label>
-              <input id="name" className={input} name="name" placeholder="Entrez le nom" value={formData.name} onChange={handleChange} />
-            </div>
-          </div>
+        <div>
+          <label htmlFor="phone" className={label}>Téléphone</label>
+          <input
+            id="phone"
+            className={input}
+            name="phone"
+            placeholder="+33..."
+            value={formData.phone}
+            onChange={handleChange} />
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="email" className={label}>Email</label>
-              <input id="email" className={input} name="email" placeholder="Entrez l'email" value={formData.email} onChange={handleChange} />
-            </div>
-
-            <div>
-              <label htmlFor="phone" className={label}>Téléphone</label>
-              <input id="phone" className={input} name="phone" placeholder="Entrez le téléphone" value={formData.phone} onChange={handleChange} />
-            </div>
-          </div>
-
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="password" className={label}>Mot de passe</label>
-            <input id="password" className={input} type="password" name="password" placeholder="Entrez le mot de passe" value={formData.password} onChange={handleChange} />
-          </div>
-        </section>
-
-        {/* Localisation */}
-        <section className="space-y-4">
-          <h3 className="text-lg font-semibold border-b pb-2">Localisation</h3>
-
-          <div>
-            <label htmlFor="map" className={label}>Map</label>
-            <input id="map" className={input} name="map" placeholder="Entrez la carte" value={formData.map} onChange={handleChange} />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label htmlFor="latitude" className={label}>Latitude</label>
-              <input id="latitude" className={input} type="number" name="latitude" placeholder="Latitude" value={formData.latitude} onChange={handleChange} />
-            </div>
-
-            <div>
-              <label htmlFor="longitude" className={label}>Longitude</label>
-              <input id="longitude" className={input} type="number" name="longitude" placeholder="Longitude" value={formData.longitude} onChange={handleChange} />
-            </div>
-
-            <div>
-              <label htmlFor="zoom" className={label}>Zoom</label>
-              <input id="zoom" className={input} type="number" name="zoom" placeholder="Niveau de zoom" value={formData.zoom} onChange={handleChange} />
-            </div>
-          </div>
-        </section>
-
-        {/* Configuration */}
-        <section className="space-y-4">
-          <h3 className="text-lg font-semibold border-b pb-2">Configuration</h3>
-
-          <div>
-            <label htmlFor="coordinateFormat" className={label}>Format des coordonnées</label>
-            <input id="coordinateFormat" className={input} name="coordinateFormat" placeholder="Format des coordonnées" value={formData.coordinateFormat} onChange={handleChange} />
-          </div>
-
-          <div>
-            <label htmlFor="expirationTime" className={label}>Date d&apos;expiration</label>
+            <label htmlFor="deviceLimit" className={label}>Limite d&apos;appareils</label>
             <input
-              id="expirationTime"
+              id="deviceLimit"
               className={input}
-              type="datetime-local"
-              name="expirationTime"
-              placeholder="Date d'expiration"
-              value={formData.expirationTime}
-              onChange={handleChange}
-            />
+              type="number"
+              name="deviceLimit"
+              value={formData.deviceLimit}
+              onChange={handleChange} />
           </div>
-
           <div>
-            <label htmlFor="poiLayer" className={label}>POI Layer</label>
-            <input id="poiLayer" className={input} name="poiLayer" placeholder="POI Layer" value={formData.poiLayer} onChange={handleChange} />
+            <label htmlFor="userLimit" className={label}>Limite d&apos;utilisateurs</label>
+            <input
+              id="userLimit"
+              className={input}
+              type="number"
+              name="userLimit"
+              value={formData.userLimit}
+              onChange={handleChange} />
           </div>
-        </section>
+        </div>
 
-        {/* Limites */}
-        <section className="space-y-4">
-          <h3 className="text-lg font-semibold border-b pb-2">Limites</h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="deviceLimit" className={label}>Limite d&apos;appareils</label>
-              <input id="deviceLimit" className={input} type="number" name="deviceLimit" placeholder="Limite d'appareils" value={formData.deviceLimit} onChange={handleChange} />
-            </div>
-
-            <div>
-              <label htmlFor="userLimit" className={label}>Limite d&apos;utilisateurs</label>
-              <input id="userLimit" className={input} type="number" name="userLimit" placeholder="Limite d'utilisateurs" value={formData.userLimit} onChange={handleChange} />
-            </div>
-          </div>
-        </section>
-
-        {/* Permissions */}
-        <section className="space-y-4">
-          <h3 className="text-lg font-semibold border-b pb-2">Permissions</h3>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[
-              { key: "readonly", label: "Lecture seule" },
-              { key: "administrator", label: "Administrateur" },
-              { key: "disabled", label: "Désactivé" },
-              { key: "deviceReadonly", label: "Appareils en lecture seule" },
-              { key: "limitCommands", label: "Limiter les commandes" },
-              { key: "fixedEmail", label: "Email fixe" }
-            ].map(item => (
-              <label key={item.key} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition">
-                <input
-                  type="checkbox"
-                  name={item.key}
-                  checked={Boolean(formData[item.key as keyof FullTraccarUser])}
-                  onChange={handleChange}
-                  className="h-5 w-5"
-                />
-                <span>{item.label}</span>
-              </label>
-            ))}
-          </div>
-        </section>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition disabled:opacity-50"
-        >
-          {loading ? "Envoi..." : "Enregistrer"}
-        </button>
+        <div className="space-y-1">
+          {[
+            { key: "administrator", label: "Administrateur" },
+            { key: "disabled", label: "Désactivé" },
+          ].map(item => (
+            <label key={item.key} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition cursor-pointer">
+              <input
+                type="checkbox"
+                name={item.key}
+                checked={Boolean(formData[item.key as keyof typeof formData])}
+                onChange={handleChange}
+                className="h-5 w-5" />
+              <span className="text-gray-700">{item.label}</span>
+            </label>
+          ))}
+        </div>
 
         {message && (
-          <p className="text-center text-sm mt-4">{message}</p>
+          <p className={`text-sm text-center ${message.startsWith("Erreur") ? "text-red-600" : "text-green-600"}`}>
+            {message}
+          </p>
         )}
+
+        <div className="flex gap-3 pt-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-xl hover:bg-gray-50 transition">
+            Annuler
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition disabled:opacity-50">
+            {btnLabel}
+          </button>
+        </div>
       </form>
     </div>
   );

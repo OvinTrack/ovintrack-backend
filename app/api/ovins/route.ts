@@ -18,7 +18,7 @@ export async function GET()
             {
                 const ovin: Ovin = {
                     device,
-		    position: positions[0],
+                    position: positions[0],
                 };
 
                 result.push(ovin);

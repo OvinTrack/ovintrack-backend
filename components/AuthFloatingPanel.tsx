@@ -14,6 +14,7 @@ export default function AuthFloatingPanel()
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
     const [open, setOpen] = useState(false);
 
     useEffect(() =>
@@ -22,10 +23,11 @@ export default function AuthFloatingPanel()
         {
             try
             {
-                const session = await fetch('/api/session').then((r) => r.json()) as { token?: string };
+                const session = await fetch('/api/session').then((r) => r.json()) as { token?: string; administrator?: boolean };
                 if (session.token)
                 {
                     setIsLoggedIn(true);
+                    setIsAdmin(session.administrator ?? false);
                     setMessage('Connecte a Traccar.');
                 }
             }
@@ -57,7 +59,9 @@ export default function AuthFloatingPanel()
                 throw new Error(errorPayload.message ?? 'Login failed');
             }
 
+            const sessionData = await fetch('/api/session').then((r) => r.json()) as { token?: string; administrator?: boolean };
             setIsLoggedIn(true);
+            setIsAdmin(sessionData.administrator ?? false);
             setMessage('Connecte a Traccar.');
             globalThis.dispatchEvent(new Event(SESSION_CHANGED_EVENT));
         }
@@ -82,6 +86,7 @@ export default function AuthFloatingPanel()
             });
 
             setIsLoggedIn(false);
+            setIsAdmin(false);
             setMessage('');
             setEmail('');
             setPassword('');
@@ -115,6 +120,13 @@ export default function AuthFloatingPanel()
                                     className="rounded border px-3 py-2 text-center text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800">
                                     Carte
                                 </Link>
+                                {isAdmin && (
+                                    <Link
+                                        href="/users"
+                                        className="rounded border px-3 py-2 text-center text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                                        Utilisateurs
+                                    </Link>
+                                )}
                                 <Link
                                     href="/devices"
                                     className="rounded border px-3 py-2 text-center text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800">
