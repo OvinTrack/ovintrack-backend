@@ -55,9 +55,16 @@ export default function MapComponent({ points }: MapProps)
                 const marker = L.marker([p.position.latitude, p.position.longitude]);
                 renderPopup(marker, {
                     title: p.device?.name ?? 'Nom inconnu',
-                    uniqueId: p.device?.uniqueId ?? 'uniqueId inconnu',
-                    DZId: p.device.attributes?.DZId ?? 'DZId inconnu',
-                    status: p.device.attributes?.status ?? p.device.attributes?.statut ?? 'Statut vaccinal inconnnu',
+                    uniqueId: p.device?.uniqueId ?? '',
+                    DZId: p.device.attributes?.DZId ?? '',
+                    eleveurId: p.device.attributes?.eleveurId ?? '',
+                    espace: p.device.attributes?.espace ?? '',
+                    race: p.device.attributes?.race ?? '',
+                    sexe: p.device.attributes?.sexe ?? '',
+                    dateNaissance: p.device.attributes?.dateNaissance ?? '',
+                    statutReproducteur: p.device.attributes?.statutReproducteur ?? '',
+                    origine: p.device.attributes?.origine ?? '',
+                    status: p.device.attributes?.status ?? p.device.attributes?.statut ?? '',
                 });
                 marker.addTo(layer);
             }

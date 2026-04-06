@@ -18,6 +18,13 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
     name: device?.name ?? "",
     uniqueId: device?.uniqueId ?? "",
     DZId: device?.attributes?.DZId ?? "",
+    eleveurId: device?.attributes?.eleveurId ?? "",
+    espace: device?.attributes?.espace ?? "",
+    race: device?.attributes?.race ?? "",
+    sexe: device?.attributes?.sexe ?? "",
+    dateNaissance: device?.attributes?.dateNaissance ?? "",
+    statutReproducteur: device?.attributes?.statutReproducteur ?? "",
+    origine: device?.attributes?.origine ?? "",
     status: device?.attributes?.status ?? device?.attributes?.statut ?? "",
   });
 
@@ -51,21 +58,38 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
     }
 
     const DZId = formData.DZId.trim();
+    const eleveurId = formData.eleveurId.trim();
+    const espace = formData.espace.trim();
+    const race = formData.race.trim();
+    const sexe = formData.sexe.trim();
+    const dateNaissance = formData.dateNaissance.trim();
+    const statutReproducteur = formData.statutReproducteur.trim();
+    const origine = formData.origine.trim();
     const status = formData.status.trim();
 
     const baseAttributes = device?.attributes ?? {};
     const attributes: Record<string, string> = {
       ...baseAttributes,
       ...(DZId && { DZId }),
+      ...(eleveurId && { eleveurId }),
+      ...(espace && { espace }),
+      ...(race && { race }),
+      ...(sexe && { sexe }),
+      ...(dateNaissance && { dateNaissance }),
+      ...(statutReproducteur && { statutReproducteur }),
+      ...(origine && { origine }),
       ...(status && { status }),
     };
 
     // Avoid sending stale keys if user clears a field.
-    if (!DZId)
-    {
-      delete attributes.DZId;
-    }
-
+    if (!DZId) delete attributes.DZId;
+    if (!eleveurId) delete attributes.eleveurId;
+    if (!espace) delete attributes.espace;
+    if (!race) delete attributes.race;
+    if (!sexe) delete attributes.sexe;
+    if (!dateNaissance) delete attributes.dateNaissance;
+    if (!statutReproducteur) delete attributes.statutReproducteur;
+    if (!origine) delete attributes.origine;
     if (!status)
     {
       delete attributes.status;
@@ -171,12 +195,96 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
         </div>
 
         <div>
-          <label htmlFor="status" className={label}>Status</label>
+          <label htmlFor="eleveurId" className={label}>Numéro national de l&apos;éleveur</label>
+          <input
+            id="eleveurId"
+            className={input}
+            name="eleveurId"
+            placeholder="Numéro national éleveur"
+            value={formData.eleveurId}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="espace" className={label}>Espace</label>
+          <input
+            id="espace"
+            className={input}
+            name="espace"
+            placeholder="Espace"
+            value={formData.espace}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="race" className={label}>Race</label>
+          <input
+            id="race"
+            className={input}
+            name="race"
+            placeholder="Race"
+            value={formData.race}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="sexe" className={label}>Sexe</label>
+          <input
+            id="sexe"
+            className={input}
+            name="sexe"
+            placeholder="Mâle / Femelle"
+            value={formData.sexe}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="dateNaissance" className={label}>Date de naissance</label>
+          <input
+            id="dateNaissance"
+            className={input}
+            type="date"
+            name="dateNaissance"
+            value={formData.dateNaissance}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="statutReproducteur" className={label}>Statut reproducteur</label>
+          <input
+            id="statutReproducteur"
+            className={input}
+            name="statutReproducteur"
+            placeholder="Géniteur / Non géniteur"
+            value={formData.statutReproducteur}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="origine" className={label}>Origine</label>
+          <input
+            id="origine"
+            className={input}
+            name="origine"
+            placeholder="Origine"
+            value={formData.origine}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="status" className={label}>Statut vaccinal</label>
           <input
             id="status"
             className={input}
             name="status"
-            placeholder="Status"
+            placeholder="Vacciné / Non vacciné"
             value={formData.status}
             onChange={handleChange}
           />
