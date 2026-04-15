@@ -28,7 +28,7 @@ export default function AuthFloatingPanel()
                 {
                     setIsLoggedIn(true);
                     setIsAdmin(session.administrator ?? false);
-                    setMessage('Connecte a Traccar.');
+                    setMessage('Connecté à Traccar.');
                 }
             }
             catch

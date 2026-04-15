@@ -24,6 +24,7 @@ export default function TraccarLoginPage()
         }
 
         const ovinsResponse = await fetch('/api/ovins');
+
         if (!ovinsResponse.ok)
         {
           setPoints([]);
