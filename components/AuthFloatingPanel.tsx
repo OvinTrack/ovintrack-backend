@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import type { ApiError } from '@/types/traccar-types';
-import { SESSION_CHANGED_EVENT } from '@/lib/utils';
+import { SESSION_CHANGED_EVENT, TOGGLE_GEOFENCE_PANEL_EVENT } from '@/lib/utils';
 import { redirect } from 'next/navigation';
 
 
@@ -16,6 +17,7 @@ export default function AuthFloatingPanel()
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
     const [open, setOpen] = useState(false);
+    const pathname = usePathname();
 
     useEffect(() =>
     {
@@ -132,6 +134,13 @@ export default function AuthFloatingPanel()
                                     className="rounded border px-3 py-2 text-center text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800">
                                     Appareils
                                 </Link>
+                                {pathname === '/' && (
+                                    <button
+                                        className="rounded border px-3 py-2 text-center text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+                                        onClick={() => globalThis.dispatchEvent(new Event(TOGGLE_GEOFENCE_PANEL_EVENT))}>
+                                        Périmètres
+                                    </button>
+                                )}
                             </div>
 
                             <div className="flex items-center justify-between gap-2">
