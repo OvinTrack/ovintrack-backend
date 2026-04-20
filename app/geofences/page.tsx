@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { LayerGroup, Map as LeafletMap } from 'leaflet';
-import type { Ovin } from '@/types/traccar-types';
+import type { Ovin, TraccarGeofence } from '@/types/traccar-types';
 import GeofenceDrawPanel from '@/components/GeofenceDrawPanel';
 import { SESSION_CHANGED_EVENT } from '@/lib/utils';
+import { fitBoundsToGeofences, wktToLeafletLayer } from '@/lib/geofence-wkt';
 
 export default function GeofencesPage()
 {
@@ -12,6 +13,7 @@ export default function GeofencesPage()
     const mapInstance = useRef<LeafletMap | null>(null);
     const [map, setMap] = useState<LeafletMap | null>(null);
     const [points, setPoints] = useState<Ovin[]>([]);
+    const [geofences, setGeofences] = useState<TraccarGeofence[]>([]);
 
     useEffect(() =>
     {
@@ -37,6 +39,13 @@ export default function GeofencesPage()
 
                 const ovins = await ovinsResponse.json() as Ovin[];
                 setPoints(ovins);
+
+                const geofencesResponse = await fetch('/api/traccar/geofences');
+                if (geofencesResponse.ok)
+                {
+                    const data = await geofencesResponse.json() as TraccarGeofence[];
+                    setGeofences(data);
+                }
             }
             catch
             {
@@ -121,6 +130,31 @@ export default function GeofencesPage()
             if (m && layer) { try { m.removeLayer(layer); } catch { } }
         };
     }, [points]);
+
+    useEffect(() =>
+    {
+        const m = mapInstance.current;
+        if (!m || geofences.length === 0) return;
+
+        let layer: LayerGroup | null = null;
+
+        import('leaflet').then((L) =>
+        {
+            layer = L.layerGroup().addTo(m);
+
+            for (const gf of geofences)
+            {
+                try { wktToLeafletLayer(gf.area, L).addTo(layer!); } catch { }
+            }
+
+            fitBoundsToGeofences(geofences.map((gf) => gf.area), L, m);
+        });
+
+        return () =>
+        {
+            if (m && layer) { try { m.removeLayer(layer); } catch { } }
+        };
+    }, [geofences, map]);
 
     return (
         <main className="relative w-screen h-screen overflow-hidden">
