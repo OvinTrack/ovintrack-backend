@@ -81,32 +81,44 @@ export function wktToLeafletLayer(wkt: string, L: typeof import('leaflet')): Lay
     throw new Error(`Format WKT non supporté : ${wkt}`);
 }
 
-export function fitBoundsToGeofences(wktList: string[], L: typeof import('leaflet'), map: LeafletMap): void
+const MIN_ZOOM = 5;
+
+function extractPoints(wkt: string): [number, number][]
 {
-    const points: [number, number][] = [];
+    const circleMatch = wkt.match(/^CIRCLE\(\s*([\d.+-]+)\s+([\d.+-]+)\s*,\s*([\d.+-]+)\s*\)$/i);
+    if (circleMatch) return [[parseFloat(circleMatch[1]), parseFloat(circleMatch[2])]];
 
-    for (const wkt of wktList)
+    const polygonMatch = wkt.match(/^POLYGON\(\((.+)\)\)$/i);
+    if (polygonMatch)
     {
-        const circleMatch = wkt.match(/^CIRCLE\(\s*([\d.+-]+)\s+([\d.+-]+)\s*,\s*([\d.+-]+)\s*\)$/i);
-        if (circleMatch)
+        return polygonMatch[1].split(',').map((pair) =>
         {
-            points.push([parseFloat(circleMatch[1]), parseFloat(circleMatch[2])]);
-            continue;
-        }
-
-        const polygonMatch = wkt.match(/^POLYGON\(\((.+)\)\)$/i);
-        if (polygonMatch)
-        {
-            polygonMatch[1].split(',').forEach((pair) =>
-            {
-                const [lat, lng] = pair.trim().split(/\s+/).map(Number);
-                points.push([lat, lng]);
-            });
-        }
+            const [lat, lng] = pair.trim().split(/\s+/).map(Number);
+            return [lat, lng] as [number, number];
+        });
     }
 
-    if (points.length > 0)
+    return [];
+}
+
+export function fitBoundsToGeofences(wktList: string[], L: typeof import('leaflet'), map: LeafletMap): void
+{
+    if (wktList.length === 0) return;
+
+    const allPoints = wktList.flatMap(extractPoints);
+    if (allPoints.length === 0) return;
+
+    const allBounds = L.latLngBounds(allPoints);
+
+    if (map.getBoundsZoom(allBounds) >= MIN_ZOOM)
     {
-        map.fitBounds(L.latLngBounds(points), { padding: [40, 40] });
+        map.fitBounds(allBounds, { padding: [40, 40] });
+        return;
+    }
+
+    const lastPoints = extractPoints(wktList[wktList.length - 1]);
+    if (lastPoints.length > 0)
+    {
+        map.fitBounds(L.latLngBounds(lastPoints), { padding: [40, 40] });
     }
 }
