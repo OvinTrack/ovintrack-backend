@@ -106,6 +106,7 @@ function startPolygonDrawing(map: LeafletMap, L: LeafletModule, setDrawnLayer: S
     let polygon: Polygon | null = null;
 
     map.doubleClickZoom.disable();
+    map.getContainer().style.cursor = 'pointer';
 
     let clickTimer: ReturnType<typeof setTimeout> | null = null;
     let pendingLatLng: { lat: number; lng: number } | null = null;
@@ -136,6 +137,7 @@ function startPolygonDrawing(map: LeafletMap, L: LeafletModule, setDrawnLayer: S
         map.off('click', onClick);
         map.off('dblclick', onDblClick);
         map.doubleClickZoom.enable();
+        map.getContainer().style.cursor = '';
 
         setDrawnLayer(polygon!);
         polygon = null;
@@ -150,6 +152,7 @@ function startPolygonDrawing(map: LeafletMap, L: LeafletModule, setDrawnLayer: S
         map.off('click', onClick);
         map.off('dblclick', onDblClick);
         map.doubleClickZoom.enable();
+        map.getContainer().style.cursor = '';
         if (polygon) { map.removeLayer(polygon); polygon = null; }
     };
 }
