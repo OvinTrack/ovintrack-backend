@@ -5,9 +5,9 @@ import type { LayerGroup, Map as LeafletMap } from "leaflet";
 import { Ovin } from "@/types/traccar-types";
 import { renderPopup } from './PopUp';
 
-type MapProps = { readonly points: Ovin[]; readonly onMapReady?: (map: LeafletMap) => void; };
+type MapProps = { readonly points: Ovin[]; };
 
-export default function MapComponent({ points, onMapReady }: MapProps)
+export default function MapComponent({ points }: MapProps)
 {
     const mapInstance = useRef<LeafletMap | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -36,7 +36,6 @@ export default function MapComponent({ points, onMapReady }: MapProps)
             if (!mapInstance.current)
             {
                 mapInstance.current = L.map(containerRef.current).setView([46.5, 2.5], 6);
-                onMapReady?.(mapInstance.current);
 
                 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
                     maxZoom: 19,
