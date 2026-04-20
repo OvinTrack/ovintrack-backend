@@ -50,6 +50,16 @@ export interface FullTraccarUser extends TraccarUser
     attributes: Record<string, string>;
 }
 
+export interface TraccarGeofence
+{
+    id: number;
+    name: string;
+    description: string;
+    area: string; // WKT : POLYGON((lon lat, ...)), CIRCLE(lon lat, radius), LINESTRING(...)
+    calendarId: number;
+    attributes: Record<string, string>;
+}
+
 export interface ApiError
 {
     message?: string;
