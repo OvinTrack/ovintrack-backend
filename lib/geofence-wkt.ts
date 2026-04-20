@@ -1,4 +1,4 @@
-import type { Circle, Layer, Polygon } from 'leaflet';
+import type { Circle, Layer, Map as LeafletMap, Polygon } from 'leaflet';
 
 /**
  * Convertit une couche Leaflet (Circle ou Polygon) en string WKT
@@ -54,4 +54,29 @@ function polygonToWkt(polygon: Polygon): string
     }
 
     return `POLYGON((${coords.join(', ')}))`;
+}
+
+export function wktToLeafletLayer(wkt: string, L: typeof import('leaflet'), map: LeafletMap): Layer
+{
+    const circleMatch = wkt.match(/^CIRCLE\(\s*([\d.+-]+)\s+([\d.+-]+)\s*,\s*([\d.+-]+)\s*\)$/i);
+    if (circleMatch)
+    {
+        const lat = parseFloat(circleMatch[1]);
+        const lng = parseFloat(circleMatch[2]);
+        const radius = parseFloat(circleMatch[3]);
+        return L.circle([lat, lng], { radius }).addTo(map);
+    }
+
+    const polygonMatch = wkt.match(/^POLYGON\(\((.+)\)\)$/i);
+    if (polygonMatch)
+    {
+        const points = polygonMatch[1].split(',').map((pair) =>
+        {
+            const [lat, lng] = pair.trim().split(/\s+/).map(Number);
+            return [lat, lng] as [number, number];
+        });
+        return L.polygon(points).addTo(map);
+    }
+
+    throw new Error(`Format WKT non supporté : ${wkt}`);
 }
