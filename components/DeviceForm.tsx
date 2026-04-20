@@ -1,13 +1,115 @@
 "use client";
 
 import { useState } from "react";
-import type { FullTraccarDevice } from "@/types/traccar-types";
+import type { FullTraccarDevice, TraccarDevice } from "@/types/traccar-types";
 
 interface DeviceFormProps
 {
   device?: FullTraccarDevice;
   onSuccess: (device: FullTraccarDevice) => void;
   onCancel: () => void;
+}
+
+interface ApiErrorResponse
+{
+  message?: string;
+  details?: unknown;
+}
+
+function isGenericTraccarRequestErrorMessage(value: string | undefined): boolean
+{
+  if (!value)
+  {
+    return false;
+  }
+
+  return /^Traccar(?: admin)? request failed \(\d+\)$/i.test(value.trim());
+}
+
+function getDetailsErrorMessage(details: unknown): string | undefined
+{
+  if (typeof details === "string")
+  {
+    return details.trim() || undefined;
+  }
+
+  if (details && typeof details === "object")
+  {
+    try
+    {
+      const serialized = JSON.stringify(details);
+      return serialized === "{}" ? undefined : serialized;
+    }
+    catch
+    {
+      return undefined;
+    }
+  }
+
+  return undefined;
+}
+
+interface DeviceFormData
+{
+  name: string;
+  uniqueId: string;
+  DZId: string;
+  eleveurId: string;
+  espace: string;
+  race: string;
+  sexe: string;
+  dateNaissance: string;
+  statutReproducteur: string;
+  origine: string;
+  status: string;
+}
+
+function normalizeUniqueId(value: string): string
+{
+  return value.trim().toLowerCase();
+}
+
+function buildAttributes(formData: DeviceFormData, baseAttributes: Record<string, string>): Record<string, string>
+{
+  const attributes: Record<string, string> = { ...baseAttributes };
+
+  const fieldMappings: Array<[keyof DeviceFormData, string]> = [
+    ["DZId", "DZId"],
+    ["eleveurId", "eleveurId"],
+    ["espace", "espace"],
+    ["race", "race"],
+    ["sexe", "sexe"],
+    ["dateNaissance", "dateNaissance"],
+    ["statutReproducteur", "statutReproducteur"],
+    ["origine", "origine"],
+  ];
+
+  for (const [formKey, attributeKey] of fieldMappings)
+  {
+    const value = formData[formKey].trim();
+
+    if (value)
+    {
+      attributes[attributeKey] = value;
+      continue;
+    }
+
+    delete attributes[attributeKey];
+  }
+
+  const statusValue = formData.status.trim();
+
+  if (statusValue)
+  {
+    attributes.status = statusValue;
+  }
+  else
+  {
+    delete attributes.status;
+    delete attributes.statut;
+  }
+
+  return attributes;
 }
 
 export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<DeviceFormProps>)
@@ -30,11 +132,98 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
 
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [uniqueIdMessage, setUniqueIdMessage] = useState("");
+  const [isCheckingUniqueId, setIsCheckingUniqueId] = useState(false);
+  const [isUniqueIdAvailable, setIsUniqueIdAvailable] = useState<boolean | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
   {
     const { name, value } = e.target;
+
+    if (name === "uniqueId")
+    {
+      setUniqueIdMessage("");
+      setIsCheckingUniqueId(false);
+      setIsUniqueIdAvailable(null);
+    }
+
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const failSubmission = (errorMessage: string) =>
+  {
+    setMessage(`Erreur : ${errorMessage}`);
+    setLoading(false);
+  };
+
+  const getRequiredFieldError = (): string | null =>
+  {
+    if (!formData.name.trim())
+    {
+      return "Le nom est requis.";
+    }
+
+    if (!formData.uniqueId.trim())
+    {
+      return "L'identifiant unique est requis.";
+    }
+
+    return null;
+  };
+
+  const getDuplicateUniqueIdError = async (normalizedUniqueId: string): Promise<string | null> =>
+  {
+    const devicesResponse = await fetch("/api/traccar/devices", {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!devicesResponse.ok)
+    {
+      return "Impossible de verifier l'unicite de l'identifiant unique.";
+    }
+
+    const devices = await devicesResponse.json() as TraccarDevice[];
+    const duplicateDevice = devices.find((existingDevice) =>
+      normalizeUniqueId(existingDevice.uniqueId) === normalizedUniqueId
+      && (!isEditing || existingDevice.id !== device.id),
+    );
+
+    if (duplicateDevice)
+    {
+      return "Un appareil existe deja avec cet identifiant unique.";
+    }
+
+    return null;
+  };
+
+  const handleUniqueIdBlur = async () =>
+  {
+    const normalizedUniqueId = normalizeUniqueId(formData.uniqueId);
+
+    if (!normalizedUniqueId)
+    {
+      setUniqueIdMessage("");
+      setIsUniqueIdAvailable(null);
+      return;
+    }
+
+    setIsCheckingUniqueId(true);
+    setUniqueIdMessage("");
+
+    const duplicateUniqueIdError = await getDuplicateUniqueIdError(normalizedUniqueId);
+
+    if (!duplicateUniqueIdError)
+    {
+      setIsUniqueIdAvailable(true);
+      setUniqueIdMessage("Identifiant unique disponible.");
+      setIsCheckingUniqueId(false);
+      return;
+    }
+
+    setIsUniqueIdAvailable(false);
+    setUniqueIdMessage(duplicateUniqueIdError);
+    setIsCheckingUniqueId(false);
   };
 
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) =>
@@ -43,58 +232,25 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
     setLoading(true);
     setMessage("");
 
-    if (!formData.name.trim())
+    const requiredFieldError = getRequiredFieldError();
+
+    if (requiredFieldError)
     {
-      setMessage("Erreur : Le nom est requis.");
-      setLoading(false);
+      failSubmission(requiredFieldError);
       return;
     }
 
-    if (!formData.uniqueId.trim())
+    const normalizedUniqueId = normalizeUniqueId(formData.uniqueId);
+
+    const duplicateUniqueIdError = await getDuplicateUniqueIdError(normalizedUniqueId);
+
+    if (duplicateUniqueIdError)
     {
-      setMessage("Erreur : L'identifiant unique est requis.");
-      setLoading(false);
+      failSubmission(duplicateUniqueIdError);
       return;
     }
 
-    const DZId = formData.DZId.trim();
-    const eleveurId = formData.eleveurId.trim();
-    const espace = formData.espace.trim();
-    const race = formData.race.trim();
-    const sexe = formData.sexe.trim();
-    const dateNaissance = formData.dateNaissance.trim();
-    const statutReproducteur = formData.statutReproducteur.trim();
-    const origine = formData.origine.trim();
-    const status = formData.status.trim();
-
-    const baseAttributes = device?.attributes ?? {};
-    const attributes: Record<string, string> = {
-      ...baseAttributes,
-      ...(DZId && { DZId }),
-      ...(eleveurId && { eleveurId }),
-      ...(espace && { espace }),
-      ...(race && { race }),
-      ...(sexe && { sexe }),
-      ...(dateNaissance && { dateNaissance }),
-      ...(statutReproducteur && { statutReproducteur }),
-      ...(origine && { origine }),
-      ...(status && { status }),
-    };
-
-    // Avoid sending stale keys if user clears a field.
-    if (!DZId) delete attributes.DZId;
-    if (!eleveurId) delete attributes.eleveurId;
-    if (!espace) delete attributes.espace;
-    if (!race) delete attributes.race;
-    if (!sexe) delete attributes.sexe;
-    if (!dateNaissance) delete attributes.dateNaissance;
-    if (!statutReproducteur) delete attributes.statutReproducteur;
-    if (!origine) delete attributes.origine;
-    if (!status)
-    {
-      delete attributes.status;
-      delete attributes.statut;
-    }
+    const attributes = buildAttributes(formData, device?.attributes ?? {});
 
     const payload = {
       name: formData.name.trim(),
@@ -115,11 +271,29 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json() as FullTraccarDevice & { message?: string };
+      const contentType = response.headers.get("content-type") ?? "";
+      let data: (FullTraccarDevice & ApiErrorResponse) | null = null;
+
+      if (contentType.includes("application/json"))
+      {
+        data = await response.json() as FullTraccarDevice & ApiErrorResponse;
+      }
 
       if (!response.ok)
       {
-        throw new Error(data.message ?? "Erreur inconnue");
+        const detailsMessage = getDetailsErrorMessage(data?.details);
+        const message = isGenericTraccarRequestErrorMessage(data?.message) && detailsMessage
+          ? detailsMessage
+          : data?.message;
+
+        const fallbackMessage = `La requete a echoue (HTTP ${response.status}).`;
+
+        throw new Error(message ?? detailsMessage ?? fallbackMessage);
+      }
+
+      if (!data)
+      {
+        throw new Error("La reponse du serveur est invalide.");
       }
 
       onSuccess(data);
@@ -148,6 +322,11 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
 
   const input =
     "w-full rounded-xl border border-gray-300 text-gray-700 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500";
+  const uniqueIdInputClass = [
+    input,
+    isUniqueIdAvailable === true ? "border-green-500 focus:ring-green-500" : "",
+    isUniqueIdAvailable === false ? "border-red-500 focus:ring-red-500" : "",
+  ].join(" ").trim();
 
   const label = "block text-sm font-medium text-gray-700 mb-1";
 
@@ -174,12 +353,21 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
           <label htmlFor="uniqueId" className={label}>Identifiant unique <span className="text-red-500">*</span></label>
           <input
             id="uniqueId"
-            className={input}
+            className={uniqueIdInputClass}
             name="uniqueId"
             placeholder="IMEI ou identifiant unique"
             value={formData.uniqueId}
             onChange={handleChange}
+            onBlur={handleUniqueIdBlur}
             required />
+          {isCheckingUniqueId && (
+            <p className="mt-1 text-xs text-gray-500">Verification de l&apos;identifiant...</p>
+          )}
+          {!isCheckingUniqueId && uniqueIdMessage && (
+            <p className={`mt-1 text-xs ${isUniqueIdAvailable ? "text-green-600" : "text-red-600"}`}>
+              {uniqueIdMessage}
+            </p>
+          )}
         </div>
 
         <div>

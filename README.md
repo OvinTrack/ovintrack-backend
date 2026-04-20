@@ -35,6 +35,8 @@ Il doit contenir les variables suivantes :
 
 -`DATABASE_URL="file:./data/dev.db"`
 -`TRACCAR_BASE_URL="http://51.44.57.214:8082/"`
+-`TRACCAR_ADMIN_EMAIL="admin@example.com"`
+-`TRACCAR_ADMIN_PASSWORD="your-admin-password"`
 
 ## Description
 
