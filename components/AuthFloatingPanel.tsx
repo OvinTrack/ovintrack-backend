@@ -132,6 +132,11 @@ export default function AuthFloatingPanel()
                                     className="rounded border px-3 py-2 text-center text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800">
                                     Appareils
                                 </Link>
+                                <Link
+                                    href="/geofences"
+                                    className="rounded border px-3 py-2 text-center text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                                    Périmètres
+                                </Link>
                             </div>
 
                             <div className="flex items-center justify-between gap-2">
