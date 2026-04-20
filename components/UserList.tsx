@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import type { FullTraccarUser } from "@/types/traccar-types";
 import UserForm from "./UserForm";
 
@@ -160,10 +161,15 @@ export default function UserList()
                 )}
               </div>
               <div className="mt-4 flex gap-2">
+                <Link
+                  href={{ pathname: "/", query: { userId: String(user.id), userName: user.name } }}
+                  className="flex-1 text-emerald-700 border border-emerald-200 hover:text-emerald-900 px-3 py-2 rounded-lg hover:bg-emerald-50 transition text-center"
+                >
+                  Voir sur la carte
+                </Link>
                 <button
                   onClick={() => handleEdit(user)}
-                  className="flex-1 text-blue-600 border border-blue-200 hover:text-blue-800 px-3 py-2 rounded-lg hover:bg-blue-50 transition"
-                >
+                  className="flex-1 text-blue-600 border border-blue-200 hover:text-blue-800 px-3 py-2 rounded-lg hover:bg-blue-50 transition">
                   Modifier
                 </button>
                 <button
@@ -208,17 +214,21 @@ export default function UserList()
                     }
                   </td>
                   <td className="px-6 py-4 text-right space-x-2">
+                    <Link
+                      href={{ pathname: "/", query: { userId: String(user.id), userName: user.name } }}
+                      className="text-emerald-700 hover:text-emerald-900 px-3 py-1 rounded-lg hover:bg-emerald-50 transition"
+                    >
+                      Voir sur la carte
+                    </Link>
                     <button
                       onClick={() => handleEdit(user)}
-                      className="text-blue-600 hover:text-blue-800 px-3 py-1 rounded-lg hover:bg-blue-50 transition"
-                    >
+                      className="text-blue-600 hover:text-blue-800 px-3 py-1 rounded-lg hover:bg-blue-50 transition">
                       Modifier
                     </button>
                     <button
                       onClick={() => void handleDelete(user)}
                       disabled={deletingId === user.id}
-                      className="text-red-600 hover:text-red-800 px-3 py-1 rounded-lg hover:bg-red-50 transition disabled:opacity-50"
-                    >
+                      className="text-red-600 hover:text-red-800 px-3 py-1 rounded-lg hover:bg-red-50 transition disabled:opacity-50">
                       {deletingId === user.id ? "Suppression..." : "Supprimer"}
                     </button>
                   </td>
@@ -237,8 +247,7 @@ export default function UserList()
         <h1 className="text-2xl font-semibold">Gestion des utilisateurs</h1>
         <button
           onClick={handleCreate}
-          className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition"
-        >
+          className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition">
           + Nouvel utilisateur
         </button>
       </div>
@@ -254,8 +263,7 @@ export default function UserList()
           {error}
           <button
             onClick={() => void fetchUsers()}
-            className="ml-3 underline hover:no-underline"
-          >
+            className="ml-3 underline hover:no-underline">
             Réessayer
           </button>
         </div>
