@@ -80,3 +80,33 @@ export function wktToLeafletLayer(wkt: string, L: typeof import('leaflet'), map:
 
     throw new Error(`Format WKT non supporté : ${wkt}`);
 }
+
+export function fitBoundsToGeofences(wktList: string[], L: typeof import('leaflet'), map: LeafletMap): void
+{
+    const points: [number, number][] = [];
+
+    for (const wkt of wktList)
+    {
+        const circleMatch = wkt.match(/^CIRCLE\(\s*([\d.+-]+)\s+([\d.+-]+)\s*,\s*([\d.+-]+)\s*\)$/i);
+        if (circleMatch)
+        {
+            points.push([parseFloat(circleMatch[1]), parseFloat(circleMatch[2])]);
+            continue;
+        }
+
+        const polygonMatch = wkt.match(/^POLYGON\(\((.+)\)\)$/i);
+        if (polygonMatch)
+        {
+            polygonMatch[1].split(',').forEach((pair) =>
+            {
+                const [lat, lng] = pair.trim().split(/\s+/).map(Number);
+                points.push([lat, lng]);
+            });
+        }
+    }
+
+    if (points.length > 0)
+    {
+        map.fitBounds(L.latLngBounds(points), { padding: [40, 40] });
+    }
+}
