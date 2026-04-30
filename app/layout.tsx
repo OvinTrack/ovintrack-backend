@@ -32,7 +32,7 @@ export default function RootLayout({
           <div className="absolute inset-0 bg-[url('/images/paturage.jpeg')] bg-cover bg-center" />
           <div className="relative mx-auto flex w-full max-w-6xl flex-col px-4 pb-5 pt-4 sm:px-8 sm:pb-7 sm:pt-6">
             <div className="flex items-start gap-2 sm:gap-4">
-              <h1 className="flex-1 text-center text-4xl font-extrabold tracking-[0.2em] text-gray-700 sm:text-5xl">
+              <h1 className="flex-1 text-center text-4xl font-extrabold tracking-[0.2em] text-gray-700 sm:text-5xl rounded-2xl bg-white/80 px-4 py-2">
                 OVIN-TRACK
               </h1>
             </div>
