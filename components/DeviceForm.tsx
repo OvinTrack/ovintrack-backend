@@ -1,13 +1,119 @@
 "use client";
 
 import { useState } from "react";
-import type { FullTraccarDevice } from "@/types/traccar-types";
+import type { FullTraccarDevice, TraccarDevice } from "@/types/traccar-types";
 
 interface DeviceFormProps
 {
   device?: FullTraccarDevice;
   onSuccess: (device: FullTraccarDevice) => void;
   onCancel: () => void;
+}
+
+interface ApiErrorResponse
+{
+  message?: string;
+  details?: unknown;
+}
+
+function isGenericTraccarRequestErrorMessage(value: string | undefined): boolean
+{
+  if (!value)
+  {
+    return false;
+  }
+
+  return /^Traccar(?: admin)? request failed \(\d+\)$/i.test(value.trim());
+}
+
+function getDetailsErrorMessage(details: unknown): string | undefined
+{
+  if (typeof details === "string")
+  {
+    return details.trim() || undefined;
+  }
+
+  if (details && typeof details === "object")
+  {
+    try
+    {
+      const serialized = JSON.stringify(details);
+      return serialized === "{}" ? undefined : serialized;
+    }
+    catch
+    {
+      return undefined;
+    }
+  }
+
+  return undefined;
+}
+
+interface DeviceFormData
+{
+  name: string;
+  uniqueId: string;
+  DZId: string;
+  eleveurId: string;
+  eleveurNom: string;
+  eleveurAdresse: string;
+  espace: string;
+  race: string;
+  sexe: string;
+  dateNaissance: string;
+  statutReproducteur: string;
+  origine: string;
+  status: string;
+}
+
+function normalizeUniqueId(value: string): string
+{
+  return value.trim().toLowerCase();
+}
+
+function buildAttributes(formData: DeviceFormData, baseAttributes: Record<string, string>): Record<string, string>
+{
+  const attributes: Record<string, string> = { ...baseAttributes };
+
+  const fieldMappings: Array<[keyof DeviceFormData, string]> = [
+    ["DZId", "DZId"],
+    ["eleveurId", "eleveurId"],
+    ["eleveurNom", "eleveurNom"],
+    ["eleveurAdresse", "eleveurAdresse"],
+    ["espace", "espace"],
+    ["race", "race"],
+    ["sexe", "sexe"],
+    ["dateNaissance", "dateNaissance"],
+    ["statutReproducteur", "statutReproducteur"],
+    ["origine", "origine"],
+  ];
+
+  for (const [formKey, attributeKey] of fieldMappings)
+  {
+    const value = formData[formKey].trim();
+
+    if (value)
+    {
+      attributes[attributeKey] = value;
+      continue;
+    }
+
+    delete attributes[attributeKey];
+  }
+
+  const statusValue = formData.status.trim();
+
+  if (statusValue)
+  {
+    attributes.status = statusValue;
+  }
+  else
+  {
+    delete attributes.status;
+    delete attributes.statut;
+  }
+
+  return attributes;
 }
 
 export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<DeviceFormProps>)
@@ -19,6 +125,8 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
     uniqueId: device?.uniqueId ?? "",
     DZId: device?.attributes?.DZId ?? "",
     eleveurId: device?.attributes?.eleveurId ?? "",
+    eleveurNom: device?.attributes?.eleveurNom ?? "",
+    eleveurAdresse: device?.attributes?.eleveurAdresse ?? "",
     espace: device?.attributes?.espace ?? "",
     race: device?.attributes?.race ?? "",
     sexe: device?.attributes?.sexe ?? "",
@@ -30,11 +138,98 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
 
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [uniqueIdMessage, setUniqueIdMessage] = useState("");
+  const [isCheckingUniqueId, setIsCheckingUniqueId] = useState(false);
+  const [isUniqueIdAvailable, setIsUniqueIdAvailable] = useState<boolean | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
   {
     const { name, value } = e.target;
+
+    if (name === "uniqueId")
+    {
+      setUniqueIdMessage("");
+      setIsCheckingUniqueId(false);
+      setIsUniqueIdAvailable(null);
+    }
+
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const failSubmission = (errorMessage: string) =>
+  {
+    setMessage(`Erreur : ${errorMessage}`);
+    setLoading(false);
+  };
+
+  const getRequiredFieldError = (): string | null =>
+  {
+    if (!formData.name.trim())
+    {
+      return "Le nom est requis.";
+    }
+
+    if (!formData.uniqueId.trim())
+    {
+      return "L'identifiant unique est requis.";
+    }
+
+    return null;
+  };
+
+  const getDuplicateUniqueIdError = async (normalizedUniqueId: string): Promise<string | null> =>
+  {
+    const devicesResponse = await fetch("/api/traccar/devices", {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!devicesResponse.ok)
+    {
+      return "Impossible de verifier l'unicite de l'identifiant unique.";
+    }
+
+    const devices = await devicesResponse.json() as TraccarDevice[];
+    const duplicateDevice = devices.find((existingDevice) =>
+      normalizeUniqueId(existingDevice.uniqueId) === normalizedUniqueId
+      && (!isEditing || existingDevice.id !== device.id),
+    );
+
+    if (duplicateDevice)
+    {
+      return "Un appareil existe deja avec cet identifiant unique.";
+    }
+
+    return null;
+  };
+
+  const handleUniqueIdBlur = async () =>
+  {
+    const normalizedUniqueId = normalizeUniqueId(formData.uniqueId);
+
+    if (!normalizedUniqueId)
+    {
+      setUniqueIdMessage("");
+      setIsUniqueIdAvailable(null);
+      return;
+    }
+
+    setIsCheckingUniqueId(true);
+    setUniqueIdMessage("");
+
+    const duplicateUniqueIdError = await getDuplicateUniqueIdError(normalizedUniqueId);
+
+    if (!duplicateUniqueIdError)
+    {
+      setIsUniqueIdAvailable(true);
+      setUniqueIdMessage("Identifiant unique disponible.");
+      setIsCheckingUniqueId(false);
+      return;
+    }
+
+    setIsUniqueIdAvailable(false);
+    setUniqueIdMessage(duplicateUniqueIdError);
+    setIsCheckingUniqueId(false);
   };
 
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) =>
@@ -43,58 +238,25 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
     setLoading(true);
     setMessage("");
 
-    if (!formData.name.trim())
+    const requiredFieldError = getRequiredFieldError();
+
+    if (requiredFieldError)
     {
-      setMessage("Erreur : Le nom est requis.");
-      setLoading(false);
+      failSubmission(requiredFieldError);
       return;
     }
 
-    if (!formData.uniqueId.trim())
+    const normalizedUniqueId = normalizeUniqueId(formData.uniqueId);
+
+    const duplicateUniqueIdError = await getDuplicateUniqueIdError(normalizedUniqueId);
+
+    if (duplicateUniqueIdError)
     {
-      setMessage("Erreur : L'identifiant unique est requis.");
-      setLoading(false);
+      failSubmission(duplicateUniqueIdError);
       return;
     }
 
-    const DZId = formData.DZId.trim();
-    const eleveurId = formData.eleveurId.trim();
-    const espace = formData.espace.trim();
-    const race = formData.race.trim();
-    const sexe = formData.sexe.trim();
-    const dateNaissance = formData.dateNaissance.trim();
-    const statutReproducteur = formData.statutReproducteur.trim();
-    const origine = formData.origine.trim();
-    const status = formData.status.trim();
-
-    const baseAttributes = device?.attributes ?? {};
-    const attributes: Record<string, string> = {
-      ...baseAttributes,
-      ...(DZId && { DZId }),
-      ...(eleveurId && { eleveurId }),
-      ...(espace && { espace }),
-      ...(race && { race }),
-      ...(sexe && { sexe }),
-      ...(dateNaissance && { dateNaissance }),
-      ...(statutReproducteur && { statutReproducteur }),
-      ...(origine && { origine }),
-      ...(status && { status }),
-    };
-
-    // Avoid sending stale keys if user clears a field.
-    if (!DZId) delete attributes.DZId;
-    if (!eleveurId) delete attributes.eleveurId;
-    if (!espace) delete attributes.espace;
-    if (!race) delete attributes.race;
-    if (!sexe) delete attributes.sexe;
-    if (!dateNaissance) delete attributes.dateNaissance;
-    if (!statutReproducteur) delete attributes.statutReproducteur;
-    if (!origine) delete attributes.origine;
-    if (!status)
-    {
-      delete attributes.status;
-      delete attributes.statut;
-    }
+    const attributes = buildAttributes(formData, device?.attributes ?? {});
 
     const payload = {
       name: formData.name.trim(),
@@ -115,11 +277,29 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json() as FullTraccarDevice & { message?: string };
+      const contentType = response.headers.get("content-type") ?? "";
+      let data: (FullTraccarDevice & ApiErrorResponse) | null = null;
+
+      if (contentType.includes("application/json"))
+      {
+        data = await response.json() as FullTraccarDevice & ApiErrorResponse;
+      }
 
       if (!response.ok)
       {
-        throw new Error(data.message ?? "Erreur inconnue");
+        const detailsMessage = getDetailsErrorMessage(data?.details);
+        const message = isGenericTraccarRequestErrorMessage(data?.message) && detailsMessage
+          ? detailsMessage
+          : data?.message;
+
+        const fallbackMessage = `La requete a echoue (HTTP ${response.status}).`;
+
+        throw new Error(message ?? detailsMessage ?? fallbackMessage);
+      }
+
+      if (!data)
+      {
+        throw new Error("La reponse du serveur est invalide.");
       }
 
       onSuccess(data);
@@ -148,8 +328,13 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
 
   const input =
     "w-full rounded-xl border border-gray-300 text-gray-700 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500";
+  const uniqueIdInputClass = [
+    input,
+    isUniqueIdAvailable === true ? "border-green-500 focus:ring-green-500" : "",
+    isUniqueIdAvailable === false ? "border-red-500 focus:ring-red-500" : "",
+  ].join(" ").trim();
 
-  const label = "block text-sm font-medium text-gray-700 mb-1";
+  const label = "block text-sm font-medium text-gray-700 font-semibold mb-1";
 
   return (
     <div className="max-w-lg mx-auto p-8 bg-white shadow-2xl rounded-2xl">
@@ -174,12 +359,21 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
           <label htmlFor="uniqueId" className={label}>Identifiant unique <span className="text-red-500">*</span></label>
           <input
             id="uniqueId"
-            className={input}
+            className={uniqueIdInputClass}
             name="uniqueId"
             placeholder="IMEI ou identifiant unique"
             value={formData.uniqueId}
             onChange={handleChange}
+            onBlur={handleUniqueIdBlur}
             required />
+          {isCheckingUniqueId && (
+            <p className="mt-1 text-xs text-gray-500">Verification de l&apos;identifiant...</p>
+          )}
+          {!isCheckingUniqueId && uniqueIdMessage && (
+            <p className={`mt-1 text-xs ${isUniqueIdAvailable ? "text-green-600" : "text-red-600"}`}>
+              {uniqueIdMessage}
+            </p>
+          )}
         </div>
 
         <div>
@@ -190,8 +384,7 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
             name="DZId"
             placeholder="DZId"
             value={formData.DZId}
-            onChange={handleChange}
-          />
+            onChange={handleChange} />
         </div>
 
         <div>
@@ -202,8 +395,29 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
             name="eleveurId"
             placeholder="Numéro national éleveur"
             value={formData.eleveurId}
-            onChange={handleChange}
-          />
+            onChange={handleChange} />
+        </div>
+
+        <div>
+          <label htmlFor="eleveurNom" className={label}>Nom de l&apos;éleveur</label>
+          <input
+            id="eleveurNom"
+            className={input}
+            name="eleveurNom"
+            placeholder="Nom de l'éleveur"
+            value={formData.eleveurNom}
+            onChange={handleChange} />
+        </div>
+
+        <div>
+          <label htmlFor="eleveurAdresse" className={label}>Adresse de l&apos;éleveur</label>
+          <input
+            id="eleveurAdresse"
+            className={input}
+            name="eleveurAdresse"
+            placeholder="Adresse de l'éleveur"
+            value={formData.eleveurAdresse}
+            onChange={handleChange} />
         </div>
 
         <div>
@@ -214,8 +428,7 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
             name="espace"
             placeholder="Espace"
             value={formData.espace}
-            onChange={handleChange}
-          />
+            onChange={handleChange} />
         </div>
 
         <div>
@@ -226,20 +439,35 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
             name="race"
             placeholder="Race"
             value={formData.race}
-            onChange={handleChange}
-          />
+            onChange={handleChange} />
         </div>
 
         <div>
-          <label htmlFor="sexe" className={label}>Sexe</label>
-          <input
-            id="sexe"
-            className={input}
-            name="sexe"
-            placeholder="Mâle / Femelle"
-            value={formData.sexe}
-            onChange={handleChange}
-          />
+          <span className={label}>Sexe</span>
+          <div className="flex items-center gap-6">
+            <label htmlFor="sexe-male" className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                id="sexe-male"
+                type="radio"
+                name="sexe"
+                value="Male"
+                checked={formData.sexe === "Male"}
+                onChange={handleChange}
+                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500" />
+              <span>Male</span>
+            </label>
+            <label htmlFor="sexe-femelle" className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                id="sexe-femelle"
+                type="radio"
+                name="sexe"
+                value="Femelle"
+                checked={formData.sexe === "Femelle"}
+                onChange={handleChange}
+                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500" />
+              <span>Femelle</span>
+            </label>
+          </div>
         </div>
 
         <div>
@@ -250,20 +478,35 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
             type="date"
             name="dateNaissance"
             value={formData.dateNaissance}
-            onChange={handleChange}
-          />
+            onChange={handleChange} />
         </div>
 
         <div>
-          <label htmlFor="statutReproducteur" className={label}>Statut reproducteur</label>
-          <input
-            id="statutReproducteur"
-            className={input}
-            name="statutReproducteur"
-            placeholder="Géniteur / Non géniteur"
-            value={formData.statutReproducteur}
-            onChange={handleChange}
-          />
+          <span className={label}>Statut reproducteur</span>
+          <div className="flex items-center gap-6">
+            <label htmlFor="statut-reproducteur-geniteur" className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                id="statut-reproducteur-geniteur"
+                type="radio"
+                name="statutReproducteur"
+                value="Géniteur"
+                checked={formData.statutReproducteur === "Géniteur"}
+                onChange={handleChange}
+                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500" />
+              <span>Géniteur</span>
+            </label>
+            <label htmlFor="statut-reproducteur-non-geniteur" className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                id="statut-reproducteur-non-geniteur"
+                type="radio"
+                name="statutReproducteur"
+                value="Non Géniteur"
+                checked={formData.statutReproducteur === "Non Géniteur"}
+                onChange={handleChange}
+                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500" />
+              <span>Non Géniteur</span>
+            </label>
+          </div>
         </div>
 
         <div>
@@ -274,20 +517,35 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
             name="origine"
             placeholder="Origine"
             value={formData.origine}
-            onChange={handleChange}
-          />
+            onChange={handleChange} />
         </div>
 
         <div>
-          <label htmlFor="status" className={label}>Statut vaccinal</label>
-          <input
-            id="status"
-            className={input}
-            name="status"
-            placeholder="Vacciné / Non vacciné"
-            value={formData.status}
-            onChange={handleChange}
-          />
+          <span className={label}>Statut vaccinal</span>
+          <div className="flex items-center gap-6">
+            <label htmlFor="status-vaccine" className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                id="status-vaccine"
+                type="radio"
+                name="status"
+                value="Vacciné"
+                checked={formData.status === "Vacciné"}
+                onChange={handleChange}
+                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500" />
+              <span>Vacciné</span>
+            </label>
+            <label htmlFor="status-non-vaccine" className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                id="status-non-vaccine"
+                type="radio"
+                name="status"
+                value="Non Vacciné"
+                checked={formData.status === "Non Vacciné"}
+                onChange={handleChange}
+                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500" />
+              <span>Non Vacciné</span>
+            </label>
+          </div>
         </div>
 
         {message && (
@@ -300,13 +558,13 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-xl hover:bg-gray-50 transition">
+            className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-xl hover:bg-gray-50 transition hover:cursor-pointer">
             Annuler
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition disabled:opacity-50">
+            className="flex-1 bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition disabled:opacity-50 hover:cursor-pointer">
             {btnLabel}
           </button>
         </div>

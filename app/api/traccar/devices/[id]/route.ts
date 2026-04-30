@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import type { FullTraccarDevice } from '@/types/traccar-types';
-import { getTraccarErrorPayload, traccarFetch } from '@/lib/traccar-session';
+import type { FullTraccarDevice, TraccarDevice } from '@/types/traccar-types';
+import { getTraccarErrorPayload, traccarAdminFetch, traccarFetch } from '@/lib/traccar-session';
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -25,22 +25,43 @@ export async function PUT(request: NextRequest, { params }: RouteParams)
     try
     {
         const { id } = await params;
+        const deviceId = Number(id);
         const body = await request.json() as Partial<FullTraccarDevice>;
+        const name = body.name?.trim();
+        const uniqueId = body.uniqueId?.trim();
 
-        if (!body.name?.trim())
+        if (!Number.isFinite(deviceId))
+        {
+            return NextResponse.json({ message: 'L\'identifiant du device est invalide' }, { status: 400 });
+        }
+
+        if (!name)
         {
             return NextResponse.json({ message: 'Le champ "name" est requis' }, { status: 400 });
         }
 
-        if (!body.uniqueId?.trim())
+        if (!uniqueId)
         {
             return NextResponse.json({ message: 'Le champ "uniqueId" est requis' }, { status: 400 });
         }
 
+        const devices = await traccarAdminFetch<TraccarDevice[]>('/api/devices') ?? [];
+        const duplicateDevice = devices.find(
+            (device) => device.uniqueId.trim().toLowerCase() === uniqueId.toLowerCase() && device.id !== deviceId,
+        );
+
+        if (duplicateDevice)
+        {
+            return NextResponse.json(
+                { message: 'Un appareil existe deja avec ce uniqueId.' },
+                { status: 409 },
+            );
+        }
+
         const payload: Partial<FullTraccarDevice> = {
-            id: Number(id),
-            name: body.name.trim(),
-            uniqueId: body.uniqueId.trim(),
+            id: deviceId,
+            name,
+            uniqueId,
             ...(body.attributes && { attributes: body.attributes }),
         };
 

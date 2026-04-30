@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import type { FullTraccarUser } from "@/types/traccar-types";
 import UserForm from "./UserForm";
 
@@ -121,8 +122,7 @@ export default function UserList()
       <UserForm
         user={selectedUser}
         onSuccess={handleFormSuccess}
-        onCancel={handleCancel}
-      />
+        onCancel={handleCancel} />
     );
   }
 
@@ -137,7 +137,7 @@ export default function UserList()
     {
       return (
         <div className="text-center py-12 text-gray-400 bg-white rounded-2xl shadow">
-          Aucun utilisateur trouvé.&nbsp;<button onClick={handleCreate} className="ml-2 text-blue-600 underline hover:no-underline">Créer le premier</button>
+          Aucun utilisateur trouvé.&nbsp;<button onClick={handleCreate} className="ml-2 text-blue-600 underline hover:no-underline hover:cursor-pointer">Créer le premier</button>
         </div>
       );
     }
@@ -159,19 +159,44 @@ export default function UserList()
                   <span className="inline-block mt-1 ml-1 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Désactivé</span>
                 )}
               </div>
-              <div className="mt-4 flex gap-2">
+              <div className="mt-4 flex flex-nowrap items-center gap-2 overflow-x-auto">
+                <Link
+                  href={{ pathname: "/", query: { userId: String(user.id), userName: user.name } }}
+                  className="shrink-0 text-emerald-700 border border-emerald-200 hover:text-emerald-900 px-3 py-2 rounded-lg hover:bg-emerald-50 transition text-center whitespace-nowrap">
+                  Voir sur la carte
+                </Link>
+                <Link
+                  href={{ pathname: "/devices", query: { userId: String(user.id), userName: user.name } }}
+                  className="shrink-0 text-cyan-700 border border-cyan-200 hover:text-cyan-900 px-3 py-2 rounded-lg hover:bg-cyan-50 transition text-center whitespace-nowrap">
+                  Voir la liste
+                </Link>
                 <button
                   onClick={() => handleEdit(user)}
-                  className="flex-1 text-blue-600 border border-blue-200 hover:text-blue-800 px-3 py-2 rounded-lg hover:bg-blue-50 transition"
-                >
-                  Modifier
+                  aria-label={`Modifier ${user.name}`}
+                  title="modifier"
+                  className="shrink-0 text-blue-600 border border-blue-200 hover:text-blue-800 px-3 py-2 rounded-lg hover:bg-blue-50 transition hover:cursor-pointer flex items-center justify-center whitespace-nowrap">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
+                  </svg>
                 </button>
                 <button
                   onClick={() => void handleDelete(user)}
                   disabled={deletingId === user.id}
-                  className="flex-1 text-red-600 border border-red-200 hover:text-red-800 px-3 py-2 rounded-lg hover:bg-red-50 transition disabled:opacity-50"
-                >
-                  {deletingId === user.id ? "Suppression..." : "Supprimer"}
+                  aria-label={`Supprimer ${user.name}`}
+                  title="Supprimer"
+                  className="shrink-0 text-red-600 border border-red-200 hover:text-red-800 px-3 py-2 rounded-lg hover:bg-red-50 transition disabled:opacity-50 hover:cursor-pointer flex items-center justify-center whitespace-nowrap">
+                  {deletingId === user.id ? (
+                    <span className="text-xs">...</span>
+                  ) : (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
+                      <path d="M3 6h18" />
+                      <path d="M8 6V4h8v2" />
+                      <path d="M19 6l-1 14H6L5 6" />
+                      <path d="M10 11v6" />
+                      <path d="M14 11v6" />
+                    </svg>
+                  )}
                 </button>
               </div>
             </div>
@@ -179,7 +204,7 @@ export default function UserList()
         </div>
 
         {/* Desktop table */}
-        <div className="hidden md:block overflow-x-auto">
+        <div className="hidden md:block">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
@@ -187,7 +212,7 @@ export default function UserList()
                 <th className="text-left px-6 py-3 font-semibold text-gray-600">Nom</th>
                 <th className="text-left px-6 py-3 font-semibold text-gray-600">Email</th>
                 <th className="text-left px-6 py-3 font-semibold text-gray-600">Rôle</th>
-                <th className="text-right px-6 py-3 font-semibold text-gray-600">Actions</th>
+                <th className="text-center px-6 py-3 font-semibold text-gray-600">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -207,20 +232,47 @@ export default function UserList()
                       : <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">Utilisateur</span>
                     }
                   </td>
-                  <td className="px-6 py-4 text-right space-x-2">
-                    <button
-                      onClick={() => handleEdit(user)}
-                      className="text-blue-600 hover:text-blue-800 px-3 py-1 rounded-lg hover:bg-blue-50 transition"
-                    >
-                      Modifier
-                    </button>
-                    <button
-                      onClick={() => void handleDelete(user)}
-                      disabled={deletingId === user.id}
-                      className="text-red-600 hover:text-red-800 px-3 py-1 rounded-lg hover:bg-red-50 transition disabled:opacity-50"
-                    >
-                      {deletingId === user.id ? "Suppression..." : "Supprimer"}
-                    </button>
+                  <td className="px-4 py-4 text-right whitespace-nowrap">
+                    <div className="inline-flex items-center justify-end gap-1.5 flex-nowrap">
+                      <Link
+                        href={{ pathname: "/", query: { userId: String(user.id), userName: user.name } }}
+                        className="text-emerald-700 hover:text-emerald-900 px-2 py-1 rounded-lg hover:bg-emerald-50 transition whitespace-nowrap text-xs">
+                        Voir sur la carte
+                      </Link>
+                      <Link
+                        href={{ pathname: "/devices", query: { userId: String(user.id), userName: user.name } }}
+                        className="text-cyan-700 hover:text-cyan-900 px-2 py-1 rounded-lg hover:bg-cyan-50 transition whitespace-nowrap text-xs">
+                        Voir la liste
+                      </Link>
+                      <button
+                        onClick={() => handleEdit(user)}
+                        aria-label={`Modifier ${user.name}`}
+                        title="modifier"
+                        className="text-blue-600 hover:text-blue-800 px-2 py-1 rounded-lg hover:bg-blue-50 transition hover:cursor-pointer inline-flex items-center justify-center whitespace-nowrap">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
+                          <path d="M12 20h9" />
+                          <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => void handleDelete(user)}
+                        disabled={deletingId === user.id}
+                        aria-label={`Supprimer ${user.name}`}
+                        title="Supprimer"
+                        className="text-red-600 hover:text-red-800 px-2 py-1 rounded-lg hover:bg-red-50 transition disabled:opacity-50 hover:cursor-pointer inline-flex items-center justify-center whitespace-nowrap">
+                        {deletingId === user.id ? (
+                          <span className="text-xs">...</span>
+                        ) : (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
+                            <path d="M3 6h18" />
+                            <path d="M8 6V4h8v2" />
+                            <path d="M19 6l-1 14H6L5 6" />
+                            <path d="M10 11v6" />
+                            <path d="M14 11v6" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -237,8 +289,7 @@ export default function UserList()
         <h1 className="text-2xl font-semibold">Gestion des utilisateurs</h1>
         <button
           onClick={handleCreate}
-          className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition"
-        >
+          className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition hover:cursor-pointer">
           + Nouvel utilisateur
         </button>
       </div>
@@ -254,8 +305,7 @@ export default function UserList()
           {error}
           <button
             onClick={() => void fetchUsers()}
-            className="ml-3 underline hover:no-underline"
-          >
+            className="ml-3 underline hover:no-underline hover:cursor-pointer">
             Réessayer
           </button>
         </div>

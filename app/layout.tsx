@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import AuthFloatingPanel from "@/components/AuthFloatingPanel";
+import HeaderNav from "@/components/HeaderNav";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,10 +28,18 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <div className="flex w-full items-center justify-center mt-5 bg-zinc-50 font-sans dark:bg-zinc-950/90">
-          <h1 className="text-4xl font-bold w-full text-center">OVIN-TRACK</h1>
-        </div>
-        <AuthFloatingPanel />
+        <header className="relative isolate flex h-72 w-full overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/images/paturage.jpeg')] bg-cover bg-center" />
+          <div className="relative mx-auto flex w-full max-w-6xl flex-col px-4 pb-5 pt-4 sm:px-8 sm:pb-7 sm:pt-6">
+            <div className="flex items-start gap-2 sm:gap-4">
+              <h1 className="flex-1 text-center text-4xl font-extrabold tracking-[0.2em] text-gray-700 sm:text-5xl rounded-2xl bg-white/80 px-4 py-2">
+                OVIN-TRACK
+              </h1>
+            </div>
+            <HeaderNav />
+          </div>
+        </header>
+
         {children}
       </body>
     </html>
