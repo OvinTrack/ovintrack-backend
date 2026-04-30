@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { ApiError } from '@/types/traccar-types';
 import { SESSION_CHANGED_EVENT } from '@/lib/utils';
 
@@ -15,6 +16,7 @@ const baseButtonClassName = 'inline-flex w-full items-center justify-center gap-
 
 export default function HeaderNav()
 {
+    const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
@@ -112,6 +114,7 @@ export default function HeaderNav()
             setEmail('');
             setPassword('');
             globalThis.dispatchEvent(new Event(SESSION_CHANGED_EVENT));
+            router.push('/');
         }
         finally
         {
