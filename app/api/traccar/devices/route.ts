@@ -8,11 +8,41 @@ function isGenericTraccar400Message(message: string): boolean
     return /^Traccar(?: admin)? request failed \(400\)$/i.test(message.trim());
 }
 
-export async function GET()
+export async function GET(request: NextRequest)
 {
     try
     {
-        const devices = await traccarFetch<TraccarDevice[]>('/api/devices');
+        const userIdParam = request.nextUrl.searchParams.get('userId');
+        const hasUserFilter = userIdParam !== null;
+
+        let devices: TraccarDevice[] = [];
+
+        if (hasUserFilter)
+        {
+            const userId = Number(userIdParam);
+
+            if (!Number.isInteger(userId) || userId <= 0)
+            {
+                return NextResponse.json({ message: 'Le parametre "userId" est invalide.' }, { status: 400 });
+            }
+
+            const currentUser = await traccarFetch<FullTraccarUser>('/api/session');
+
+            if (!currentUser?.administrator)
+            {
+                return NextResponse.json(
+                    { message: 'Seuls les administrateurs peuvent filtrer par utilisateur.' },
+                    { status: 403 },
+                );
+            }
+
+            devices = await traccarAdminFetch<TraccarDevice[]>(`/api/devices?userId=${userId}`) ?? [];
+        }
+        else
+        {
+            devices = await traccarFetch<TraccarDevice[]>('/api/devices') ?? [];
+        }
+
         return NextResponse.json(devices ?? []);
     }
     catch (error)
