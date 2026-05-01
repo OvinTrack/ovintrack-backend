@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import type { TraccarGeofence, TraccarUser } from '@/types/traccar-types';
+import type { FullTraccarUser, TraccarGeofence } from '@/types/traccar-types';
 import { getTraccarErrorPayload, traccarAdminFetch, traccarFetch } from '@/lib/traccar-session';
 
 export async function GET()
 {
     try
     {
-        const currentUser = await traccarFetch<TraccarUser>('/api/session');
+        const currentUser = await traccarFetch<FullTraccarUser>('/api/session');
         const geofences = currentUser?.administrator
             ? await traccarAdminFetch<TraccarGeofence[]>('/api/geofences?all=true')
             : await traccarFetch<TraccarGeofence[]>('/api/geofences');
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest)
             return NextResponse.json({ message: 'Le champ "area" (WKT) est requis' }, { status: 400 });
         }
 
-        const currentUser = await traccarFetch<TraccarUser>('/api/session');
+        const currentUser = await traccarFetch<FullTraccarUser>('/api/session');
 
         const payload: Partial<TraccarGeofence> = {
             name: body.name.trim(),
