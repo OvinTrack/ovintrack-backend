@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { forwardRef, useEffect, useRef, useState } from 'react';
 import type { LatLng, Map as LeafletMap } from 'leaflet';
 import { useLeafletDraw } from '@/hooks/useLeafletDraw';
 import { leafletLayerToWkt } from '@/lib/geofence-wkt';
@@ -14,7 +14,7 @@ interface GeofenceDrawPanelProps
 
 type Step = 'idle' | 'drawing' | 'form';
 
-export default function GeofenceDrawPanel({ map }: GeofenceDrawPanelProps)
+const GeofenceDrawPanel = forwardRef<HTMLDivElement, GeofenceDrawPanelProps>(function GeofenceDrawPanel({ map }, ref)
 {
     const { startDrawing, cancelDrawing, drawnLayer, clearDrawnLayer } = useLeafletDraw(map);
 
@@ -153,7 +153,7 @@ export default function GeofenceDrawPanel({ map }: GeofenceDrawPanelProps)
     };
 
     return (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[1000] w-[min(24rem,calc(100vw-2rem))] rounded-2xl border border-zinc-200 bg-white/90 shadow-lg backdrop-blur dark:border-zinc-700 dark:bg-zinc-950/90 p-4 space-y-3">
+        <div ref={ref} className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[1000] w-[min(24rem,calc(100vw-2rem))] rounded-2xl border border-zinc-200 bg-white/90 shadow-lg backdrop-blur dark:border-zinc-700 dark:bg-zinc-950/90 p-4 space-y-3">
 
             {step === 'idle' && (
                 <>
@@ -269,4 +269,6 @@ export default function GeofenceDrawPanel({ map }: GeofenceDrawPanelProps)
             )}
         </div>
     );
-}
+});
+
+export default GeofenceDrawPanel;

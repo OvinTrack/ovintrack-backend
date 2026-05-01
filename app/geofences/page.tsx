@@ -18,6 +18,7 @@ export default function GeofencesPage()
     const [isAdmin, setIsAdmin] = useState(false);
     const [selectedGeofenceId, setSelectedGeofenceId] = useState<number | null>(null);
     const geofenceLayersRef = useRef<Map<number, Path>>(new Map());
+    const drawPanelRef = useRef<HTMLDivElement>(null);
 
     useEffect(() =>
     {
@@ -194,7 +195,15 @@ export default function GeofencesPage()
             {
                 const bounds = (layer as { getBounds: () => import('leaflet').LatLngBounds }).getBounds();
                 const targetZoom = m.getBoundsZoom(bounds) * 0.95;
-                m.setView(bounds.getCenter(), targetZoom);
+                const centerPx = m.project(bounds.getCenter(), targetZoom);
+                const northPx = m.project(bounds.getNorthWest(), targetZoom);
+                const southPx = m.project(bounds.getSouthEast(), targetZoom);
+                const boundsHeightPx = (southPx.y - northPx.y) / 2;
+                const adjustedCenter = m.unproject(
+                    centerPx.add([0, boundsHeightPx]),
+                    targetZoom,
+                );
+                m.setView(adjustedCenter, targetZoom);
             }
         }
     }, [selectedGeofenceId]);
@@ -203,7 +212,7 @@ export default function GeofencesPage()
         <main className="relative w-screen h-screen overflow-hidden">
             <div ref={containerRef} className="w-full h-full" />
             <GeofenceList geofences={geofences} isAdmin={isAdmin} selectedGeofenceId={selectedGeofenceId} onSelect={setSelectedGeofenceId} />
-            <GeofenceDrawPanel map={map} />
+            <GeofenceDrawPanel ref={drawPanelRef} map={map} />
         </main>
     );
 }
