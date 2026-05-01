@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { LayerGroup, Map as LeafletMap } from 'leaflet';
 import type { Ovin, TraccarGeofence } from '@/types/traccar-types';
 import GeofenceDrawPanel from '@/components/GeofenceDrawPanel';
-import { SESSION_CHANGED_EVENT } from '@/lib/utils';
+import GeofenceList from '@/components/GeofenceList';
+import { GEOFENCES_CHANGED_EVENT, SESSION_CHANGED_EVENT } from '@/lib/utils';
 import { fitBoundsToGeofences, wktToLeafletLayer } from '@/lib/geofence-wkt';
 
 export default function GeofencesPage()
@@ -56,11 +57,14 @@ export default function GeofencesPage()
         void syncPointsWithSession();
 
         const onSessionChanged = () => { void syncPointsWithSession(); };
+        const onGeofencesChanged = () => { void syncPointsWithSession(); };
         globalThis.addEventListener(SESSION_CHANGED_EVENT, onSessionChanged);
+        globalThis.addEventListener(GEOFENCES_CHANGED_EVENT, onGeofencesChanged);
 
         return () =>
         {
             globalThis.removeEventListener(SESSION_CHANGED_EVENT, onSessionChanged);
+            globalThis.removeEventListener(GEOFENCES_CHANGED_EVENT, onGeofencesChanged);
         };
     }, []);
 
@@ -159,6 +163,7 @@ export default function GeofencesPage()
     return (
         <main className="relative w-screen h-screen overflow-hidden">
             <div ref={containerRef} className="w-full h-full" />
+            <GeofenceList geofences={geofences} />
             <GeofenceDrawPanel map={map} />
         </main>
     );

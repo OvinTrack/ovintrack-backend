@@ -5,6 +5,7 @@ import type { Map as LeafletMap } from 'leaflet';
 import { useLeafletDraw } from '@/hooks/useLeafletDraw';
 import { leafletLayerToWkt } from '@/lib/geofence-wkt';
 import type { ApiError } from '@/types/traccar-types';
+import { GEOFENCES_CHANGED_EVENT } from '@/lib/utils';
 
 interface GeofenceDrawPanelProps
 {
@@ -91,6 +92,7 @@ export default function GeofenceDrawPanel({ map }: GeofenceDrawPanelProps)
             }
 
             setMessage('Périmètre créé !');
+            globalThis.dispatchEvent(new Event(GEOFENCES_CHANGED_EVENT));
             clearDrawnLayer();
             setStep('idle');
             setName('');
