@@ -39,7 +39,15 @@ export default function DeviceList()
     {
       const f = filters[key]?.trim().toLowerCase();
       if (!f) return true;
-      return (value ?? "").toLowerCase().includes(f);
+
+      const normalizedValue = (value ?? "").trim().toLowerCase();
+
+      if (key === "sexe" || key === "status" || key === "statutReproducteur")
+      {
+        return normalizedValue === f;
+      }
+
+      return normalizedValue.includes(f);
     };
 
     return (
@@ -161,6 +169,69 @@ export default function DeviceList()
     {
       setDeletingId(null);
     }
+  };
+
+  const renderColumnFilter = (key: string, placeholder: string) =>
+  {
+    if (key === "sexe")
+    {
+      return (
+        <select
+          aria-label="Filtrer par sexe"
+          title="Filtrer par sexe"
+          value={filters[key] ?? ""}
+          onChange={e => handleFilterChange(key, e.target.value)}
+          className="w-full rounded border border-gray-300 px-2 py-1 text-xs font-normal text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white"
+        >
+          <option value="">Sexe</option>
+          <option value="male">Male</option>
+          <option value="femelle">Femelle</option>
+        </select>
+      );
+    }
+
+    if (key === "status")
+    {
+      return (
+        <select
+          aria-label="Filtrer par statut vaccinal"
+          title="Filtrer par statut vaccinal"
+          value={filters[key] ?? ""}
+          onChange={e => handleFilterChange(key, e.target.value)}
+          className="w-full rounded border border-gray-300 px-2 py-1 text-xs font-normal text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white"
+        >
+          <option value="">Statut vaccinal</option>
+          <option value="vacciné">Vacciné</option>
+          <option value="non vacciné">Non Vacciné</option>
+        </select>
+      );
+    }
+
+    if (key === "statutReproducteur")
+    {
+      return (
+        <select
+          aria-label="Filtrer par statut reproducteur"
+          title="Filtrer par statut reproducteur"
+          value={filters[key] ?? ""}
+          onChange={e => handleFilterChange(key, e.target.value)}
+          className="w-full rounded border border-gray-300 px-2 py-1 text-xs font-normal text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white"
+        >
+          <option value="">Statut reproducteur</option>
+          <option value="géniteur">Géniteur</option>
+          <option value="non géniteur">Non Géniteur</option>
+        </select>
+      );
+    }
+
+    return (
+      <input
+        type="text"
+        placeholder={placeholder}
+        value={filters[key] ?? ""}
+        onChange={e => handleFilterChange(key, e.target.value)}
+        className="w-full rounded border border-gray-300 px-2 py-1 text-xs font-normal text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400" />
+    );
   };
 
   if (view === "create" || view === "edit")
@@ -307,12 +378,7 @@ export default function DeviceList()
                   ["status", "Vaccinal"],
                 ] as [string, string][]).map(([key, placeholder]) => (
                   <th key={key} className="px-2 py-2">
-                    <input
-                      type="text"
-                      placeholder={placeholder}
-                      value={filters[key] ?? ""}
-                      onChange={e => handleFilterChange(key, e.target.value)}
-                      className="w-full rounded border border-gray-300 px-2 py-1 text-xs font-normal text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400" />
+                    {renderColumnFilter(key, placeholder)}
                   </th>
                 ))}
                 <th className="px-2 py-2 text-right">
