@@ -12,7 +12,7 @@ interface GeofenceListProps
     onSelect: (id: number | null) => void;
 }
 
-export default function GeofenceList({ geofences, isAdmin, selectedGeofenceId, onSelect }: GeofenceListProps)
+export default function GeofenceList({ geofences, isAdmin, selectedGeofenceId, onSelect }: Readonly<GeofenceListProps>)
 {
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [error, setError] = useState('');
@@ -49,7 +49,7 @@ export default function GeofenceList({ geofences, isAdmin, selectedGeofenceId, o
     if (geofences.length === 0) return null;
 
     return (
-        <div className="fixed left-4 top-[19rem] z-[1000] w-56 rounded-2xl border border-zinc-200 bg-white/90 shadow-lg backdrop-blur dark:border-zinc-700 dark:bg-zinc-950/90 p-3 space-y-1 max-h-[calc(100vh-20rem)] overflow-y-auto">
+        <div className="fixed left-4 top-76 z-1000 w-56 rounded-2xl border border-zinc-200 bg-white/90 shadow-lg backdrop-blur dark:border-zinc-700 dark:bg-zinc-950/90 p-3 space-y-1 max-h-[calc(100vh-20rem)] overflow-y-auto">
             <p className="text-sm font-semibold text-zinc-600 dark:text-zinc-300 pb-2 border-b border-zinc-200 dark:border-zinc-700">
                 Périmètres
             </p>
@@ -61,9 +61,10 @@ export default function GeofenceList({ geofences, isAdmin, selectedGeofenceId, o
             {geofences.map((geofence) => (
                 <div
                     key={geofence.id}
-                    onClick={() => onSelect(selectedGeofenceId === geofence.id ? null : geofence.id)}
-                    className={`flex items-center justify-between gap-2 py-1 px-1 rounded-lg cursor-pointer transition ${selectedGeofenceId === geofence.id ? 'bg-green-200 dark:bg-green-800' : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'}`}>
-                    <div className="flex flex-col min-w-0">
+                    className={`flex items-center justify-between gap-2 py-1 px-1 rounded-lg transition ${selectedGeofenceId === geofence.id ? 'bg-green-200 dark:bg-green-800' : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'}`}>
+                    <button
+                        onClick={() => onSelect(selectedGeofenceId === geofence.id ? null : geofence.id)}
+                        className="flex-1 min-w-0 flex flex-col text-left cursor-pointer">
                         <span className="text-sm text-zinc-700 dark:text-zinc-300 truncate" title={geofence.name}>
                             {geofence.name}
                         </span>
@@ -72,7 +73,7 @@ export default function GeofenceList({ geofences, isAdmin, selectedGeofenceId, o
                                 {geofence.attributes.userEmail}
                             </span>
                         )}
-                    </div>
+                    </button>
                     <button
                         onClick={() => void handleDelete(geofence)}
                         disabled={deletingId === geofence.id}

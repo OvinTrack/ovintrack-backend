@@ -48,7 +48,7 @@ function polygonToWkt(polygon: Polygon): string
     const coords = ring.map(({ lat, lng }) => `${lat} ${lng}`);
 
     // Fermer l'anneau si nécessaire
-    if (coords[0] !== coords[coords.length - 1])
+    if (coords[0] !== coords.at(-1))
     {
         coords.push(coords[0]);
     }
@@ -58,16 +58,18 @@ function polygonToWkt(polygon: Polygon): string
 
 export function wktToLeafletLayer(wkt: string, L: typeof import('leaflet')): Layer
 {
-    const circleMatch = wkt.match(/^CIRCLE\(\s*([\d.+-]+)\s+([\d.+-]+)\s*,\s*([\d.+-]+)\s*\)$/i);
+    const circleMatch = new RegExp(/^CIRCLE\(\s*([\d.+-]+)\s+([\d.+-]+)\s*,\s*([\d.+-]+)\s*\)$/i).exec(wkt);
+
     if (circleMatch)
     {
-        const lat = parseFloat(circleMatch[1]);
-        const lng = parseFloat(circleMatch[2]);
-        const radius = parseFloat(circleMatch[3]);
+        const lat = Number.parseFloat(circleMatch[1]);
+        const lng = Number.parseFloat(circleMatch[2]);
+        const radius = Number.parseFloat(circleMatch[3]);
         return L.circle([lat, lng], { radius });
     }
 
-    const polygonMatch = wkt.match(/^POLYGON\(\((.+)\)\)$/i);
+    const polygonMatch = new RegExp(/^POLYGON\(\((.+)\)\)$/i).exec(wkt);
+
     if (polygonMatch)
     {
         const points = polygonMatch[1].split(',').map((pair) =>
@@ -75,6 +77,7 @@ export function wktToLeafletLayer(wkt: string, L: typeof import('leaflet')): Lay
             const [lat, lng] = pair.trim().split(/\s+/).map(Number);
             return [lat, lng] as [number, number];
         });
+
         return L.polygon(points);
     }
 
@@ -85,10 +88,12 @@ const MIN_ZOOM = 5;
 
 function extractPoints(wkt: string): [number, number][]
 {
-    const circleMatch = wkt.match(/^CIRCLE\(\s*([\d.+-]+)\s+([\d.+-]+)\s*,\s*([\d.+-]+)\s*\)$/i);
-    if (circleMatch) return [[parseFloat(circleMatch[1]), parseFloat(circleMatch[2])]];
+    const circleMatch = new RegExp(/^CIRCLE\(\s*([\d.+-]+)\s+([\d.+-]+)\s*,\s*([\d.+-]+)\s*\)$/i).exec(wkt);
 
-    const polygonMatch = wkt.match(/^POLYGON\(\((.+)\)\)$/i);
+    if (circleMatch) return [[Number.parseFloat(circleMatch[1]), Number.parseFloat(circleMatch[2])]];
+
+    const polygonMatch = new RegExp(/^POLYGON\(\((.+)\)\)$/i).exec(wkt);
+
     if (polygonMatch)
     {
         return polygonMatch[1].split(',').map((pair) =>
@@ -106,6 +111,7 @@ export function fitBoundsToGeofences(wktList: string[], L: typeof import('leafle
     if (wktList.length === 0) return;
 
     const allPoints = wktList.flatMap(extractPoints);
+
     if (allPoints.length === 0) return;
 
     const allBounds = L.latLngBounds(allPoints);
@@ -116,7 +122,12 @@ export function fitBoundsToGeofences(wktList: string[], L: typeof import('leafle
         return;
     }
 
-    const lastPoints = extractPoints(wktList[wktList.length - 1]);
+    const lastWkt = wktList.at(-1);
+
+    if (lastWkt === undefined) return;
+
+    const lastPoints = extractPoints(lastWkt);
+
     if (lastPoints.length > 0)
     {
         map.fitBounds(L.latLngBounds(lastPoints), { padding: [40, 40] });

@@ -57,7 +57,7 @@ export function useLeafletDraw(map: LeafletMap | null): UseLeafletDrawResult
 
 type LeafletModule = typeof import('leaflet');
 type SetLayer = (layer: Layer) => void;
-type CleanupRef = React.MutableRefObject<(() => void) | null>;
+type CleanupRef = React.RefObject<(() => void) | null>;
 
 function startCircleDrawing(map: LeafletMap, L: LeafletModule, setDrawnLayer: SetLayer, cleanupRef: CleanupRef): void
 {

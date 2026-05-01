@@ -38,6 +38,7 @@ export default function DeviceList()
     const match = (value: string | undefined, key: string) =>
     {
       const f = filters[key]?.trim().toLowerCase();
+
       if (!f) return true;
 
       const normalizedValue = (value ?? "").trim().toLowerCase();
@@ -72,6 +73,7 @@ export default function DeviceList()
   {
     setLoading(true);
     setError("");
+
     try
     {
       const endpoint = hasUserFilter
@@ -181,8 +183,7 @@ export default function DeviceList()
           title="Filtrer par sexe"
           value={filters[key] ?? ""}
           onChange={e => handleFilterChange(key, e.target.value)}
-          className="w-full rounded border border-gray-300 px-2 py-1 text-xs font-normal text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white"
-        >
+          className="w-full rounded border border-gray-300 px-2 py-1 text-xs font-normal text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white">
           <option value="">Sexe</option>
           <option value="male">Male</option>
           <option value="femelle">Femelle</option>
@@ -198,8 +199,7 @@ export default function DeviceList()
           title="Filtrer par statut vaccinal"
           value={filters[key] ?? ""}
           onChange={e => handleFilterChange(key, e.target.value)}
-          className="w-full rounded border border-gray-300 px-2 py-1 text-xs font-normal text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white"
-        >
+          className="w-full rounded border border-gray-300 px-2 py-1 text-xs font-normal text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white">
           <option value="">Statut vaccinal</option>
           <option value="vacciné">Vacciné</option>
           <option value="non vacciné">Non Vacciné</option>
@@ -215,8 +215,7 @@ export default function DeviceList()
           title="Filtrer par statut reproducteur"
           value={filters[key] ?? ""}
           onChange={e => handleFilterChange(key, e.target.value)}
-          className="w-full rounded border border-gray-300 px-2 py-1 text-xs font-normal text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white"
-        >
+          className="w-full rounded border border-gray-300 px-2 py-1 text-xs font-normal text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white">
           <option value="">Statut reproducteur</option>
           <option value="géniteur">Géniteur</option>
           <option value="non géniteur">Non Géniteur</option>

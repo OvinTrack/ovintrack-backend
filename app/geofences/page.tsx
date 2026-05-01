@@ -126,7 +126,7 @@ export default function GeofencesPage()
 
             for (const p of safePoints)
             {
-                L.marker([p.position.latitude, p.position.longitude]).addTo(layer!);
+                L.marker([p.position.latitude, p.position.longitude]).addTo(layer);
             }
 
             if (safePoints.length > 0)
@@ -148,8 +148,9 @@ export default function GeofencesPage()
         if (!m || geofences.length === 0) return;
 
         let layer: LayerGroup | null = null;
+        const geofenceLayers = geofenceLayersRef.current;
 
-        geofenceLayersRef.current.clear();
+        geofenceLayers.clear();
 
         import('leaflet').then((L) =>
         {
@@ -161,8 +162,8 @@ export default function GeofencesPage()
                 {
                     const gfLayer = wktToLeafletLayer(gf.area, L) as Path;
                     gfLayer.on('click', () => setSelectedGeofenceId(gf.id));
-                    gfLayer.addTo(layer!);
-                    geofenceLayersRef.current.set(gf.id, gfLayer);
+                    gfLayer.addTo(layer);
+                    geofenceLayers.set(gf.id, gfLayer);
                 }
                 catch { }
             }
@@ -173,7 +174,7 @@ export default function GeofencesPage()
         return () =>
         {
             if (m && layer) { try { m.removeLayer(layer); } catch { } }
-            geofenceLayersRef.current.clear();
+            geofenceLayers.clear();
         };
     }, [geofences, map]);
 
