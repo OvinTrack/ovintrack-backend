@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { LayerGroup, Map as LeafletMap } from 'leaflet';
+import type { LayerGroup, Map as LeafletMap, Path } from 'leaflet';
 import type { Ovin, TraccarGeofence } from '@/types/traccar-types';
 import GeofenceDrawPanel from '@/components/GeofenceDrawPanel';
 import GeofenceList from '@/components/GeofenceList';
@@ -16,6 +16,8 @@ export default function GeofencesPage()
     const [points, setPoints] = useState<Ovin[]>([]);
     const [geofences, setGeofences] = useState<TraccarGeofence[]>([]);
     const [isAdmin, setIsAdmin] = useState(false);
+    const [selectedGeofenceId, setSelectedGeofenceId] = useState<number | null>(null);
+    const geofenceLayersRef = useRef<Map<number, Path>>(new Map());
 
     useEffect(() =>
     {
@@ -146,13 +148,22 @@ export default function GeofencesPage()
 
         let layer: LayerGroup | null = null;
 
+        geofenceLayersRef.current.clear();
+
         import('leaflet').then((L) =>
         {
             layer = L.layerGroup().addTo(m);
 
             for (const gf of geofences)
             {
-                try { wktToLeafletLayer(gf.area, L).addTo(layer!); } catch { }
+                try
+                {
+                    const gfLayer = wktToLeafletLayer(gf.area, L) as Path;
+                    gfLayer.on('click', () => setSelectedGeofenceId(gf.id));
+                    gfLayer.addTo(layer!);
+                    geofenceLayersRef.current.set(gf.id, gfLayer);
+                }
+                catch { }
             }
 
             fitBoundsToGeofences(geofences.map((gf) => gf.area), L, m);
@@ -161,13 +172,37 @@ export default function GeofencesPage()
         return () =>
         {
             if (m && layer) { try { m.removeLayer(layer); } catch { } }
+            geofenceLayersRef.current.clear();
         };
     }, [geofences, map]);
+
+    useEffect(() =>
+    {
+        geofenceLayersRef.current.forEach((layer, id) =>
+        {
+            layer.setStyle(id === selectedGeofenceId
+                ? { color: '#16a34a', weight: 4, fillOpacity: 0.4 }
+                : { color: '#3388ff', weight: 3, fillOpacity: 0.2 }
+            );
+        });
+
+        if (selectedGeofenceId !== null)
+        {
+            const layer = geofenceLayersRef.current.get(selectedGeofenceId);
+            const m = mapInstance.current;
+            if (layer && m && 'getBounds' in layer)
+            {
+                const bounds = (layer as { getBounds: () => import('leaflet').LatLngBounds }).getBounds();
+                const targetZoom = m.getBoundsZoom(bounds) * 0.95;
+                m.setView(bounds.getCenter(), targetZoom);
+            }
+        }
+    }, [selectedGeofenceId]);
 
     return (
         <main className="relative w-screen h-screen overflow-hidden">
             <div ref={containerRef} className="w-full h-full" />
-            <GeofenceList geofences={geofences} isAdmin={isAdmin} />
+            <GeofenceList geofences={geofences} isAdmin={isAdmin} selectedGeofenceId={selectedGeofenceId} onSelect={setSelectedGeofenceId} />
             <GeofenceDrawPanel map={map} />
         </main>
     );
