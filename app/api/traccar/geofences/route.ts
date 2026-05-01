@@ -36,12 +36,18 @@ export async function POST(request: NextRequest)
             return NextResponse.json({ message: 'Le champ "area" (WKT) est requis' }, { status: 400 });
         }
 
+        const currentUser = await traccarFetch<TraccarUser>('/api/session');
+
         const payload: Partial<TraccarGeofence> = {
             name: body.name.trim(),
             area: body.area.trim(),
             description: body.description?.trim() ?? '',
             calendarId: body.calendarId ?? 0,
-            attributes: body.attributes ?? {},
+            attributes: {
+                ...body.attributes,
+                ...(currentUser?.id != null && { userId: String(currentUser.id) }),
+                ...(currentUser?.email && { userEmail: currentUser.email }),
+            },
         };
 
         const geofence = await traccarFetch<TraccarGeofence>('/api/geofences', {

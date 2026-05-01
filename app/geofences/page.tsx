@@ -15,6 +15,7 @@ export default function GeofencesPage()
     const [map, setMap] = useState<LeafletMap | null>(null);
     const [points, setPoints] = useState<Ovin[]>([]);
     const [geofences, setGeofences] = useState<TraccarGeofence[]>([]);
+    const [isAdmin, setIsAdmin] = useState(false);
 
     useEffect(() =>
     {
@@ -22,13 +23,16 @@ export default function GeofencesPage()
         {
             try
             {
-                const session = await fetch('/api/session').then((r) => r.json()) as { token?: string };
+                const session = await fetch('/api/session').then((r) => r.json()) as { token?: string; administrator?: boolean };
 
                 if (!session.token)
                 {
                     setPoints([]);
+                    setIsAdmin(false);
                     return;
                 }
+
+                setIsAdmin(session.administrator ?? false);
 
                 const ovinsResponse = await fetch('/api/ovins');
 
@@ -163,7 +167,7 @@ export default function GeofencesPage()
     return (
         <main className="relative w-screen h-screen overflow-hidden">
             <div ref={containerRef} className="w-full h-full" />
-            <GeofenceList geofences={geofences} />
+            <GeofenceList geofences={geofences} isAdmin={isAdmin} />
             <GeofenceDrawPanel map={map} />
         </main>
     );

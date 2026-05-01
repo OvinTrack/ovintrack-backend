@@ -7,9 +7,10 @@ import { GEOFENCES_CHANGED_EVENT } from '@/lib/utils';
 interface GeofenceListProps
 {
     geofences: TraccarGeofence[];
+    isAdmin: boolean;
 }
 
-export default function GeofenceList({ geofences }: GeofenceListProps)
+export default function GeofenceList({ geofences, isAdmin }: GeofenceListProps)
 {
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [error, setError] = useState('');
@@ -57,9 +58,16 @@ export default function GeofenceList({ geofences }: GeofenceListProps)
 
             {geofences.map((geofence) => (
                 <div key={geofence.id} className="flex items-center justify-between gap-2 py-1">
-                    <span className="text-sm text-zinc-700 dark:text-zinc-300 truncate" title={geofence.name}>
-                        {geofence.name}
-                    </span>
+                    <div className="flex flex-col min-w-0">
+                        <span className="text-sm text-zinc-700 dark:text-zinc-300 truncate" title={geofence.name}>
+                            {geofence.name}
+                        </span>
+                        {isAdmin && geofence.attributes?.userEmail && (
+                            <span className="text-xs text-zinc-400 truncate" title={geofence.attributes.userEmail}>
+                                {geofence.attributes.userEmail}
+                            </span>
+                        )}
+                    </div>
                     <button
                         onClick={() => void handleDelete(geofence)}
                         disabled={deletingId === geofence.id}
