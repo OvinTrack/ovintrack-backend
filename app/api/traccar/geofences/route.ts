@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import type { TraccarGeofence } from '@/types/traccar-types';
-import { getTraccarErrorPayload, traccarFetch } from '@/lib/traccar-session';
+import type { TraccarGeofence, TraccarUser } from '@/types/traccar-types';
+import { getTraccarErrorPayload, traccarAdminFetch, traccarFetch } from '@/lib/traccar-session';
 
 export async function GET()
 {
     try
     {
-        const geofences = await traccarFetch<TraccarGeofence[]>('/api/geofences');
+        const currentUser = await traccarFetch<TraccarUser>('/api/session');
+        const geofences = currentUser?.administrator
+            ? await traccarAdminFetch<TraccarGeofence[]>('/api/geofences?all=true')
+            : await traccarFetch<TraccarGeofence[]>('/api/geofences');
         return NextResponse.json(geofences ?? []);
     }
     catch (error)
