@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import type { Map as LeafletMap } from 'leaflet';
+import { useEffect, useRef, useState } from 'react';
+import type { LatLng, Map as LeafletMap } from 'leaflet';
 import { useLeafletDraw } from '@/hooks/useLeafletDraw';
 import { leafletLayerToWkt } from '@/lib/geofence-wkt';
 import type { ApiError } from '@/types/traccar-types';
@@ -24,8 +24,10 @@ export default function GeofenceDrawPanel({ map }: GeofenceDrawPanelProps)
     const [description, setDescription] = useState('');
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
+    const [mousePos, setMousePos] = useState<{ lat: number; lng: number } | null>(null);
+    const [centerLocked, setCenterLocked] = useState(false);
+    const [radius, setRadius] = useState<number | null>(null);
 
-    // Quand la forme est dessinée, passer au formulaire
     useEffect(() =>
     {
         if (drawnLayer)
@@ -33,6 +35,48 @@ export default function GeofenceDrawPanel({ map }: GeofenceDrawPanelProps)
             setStep('form');
         }
     }, [drawnLayer]);
+
+    const posLocked = useRef(false);
+    const centerRef = useRef<LatLng | null>(null);
+
+    useEffect(() =>
+    {
+        if (!map || step !== 'drawing' || drawMode !== 'circle') return;
+
+        posLocked.current = false;
+        centerRef.current = null;
+
+        const onMouseMove = (e: { latlng: LatLng }) =>
+        {
+            if (!posLocked.current)
+            {
+                setMousePos({ lat: e.latlng.lat, lng: e.latlng.lng });
+            }
+            else if (centerRef.current)
+            {
+                setRadius(Math.round(centerRef.current.distanceTo(e.latlng)));
+            }
+        };
+
+        const onMouseDown = (e: { latlng: LatLng }) =>
+        {
+            posLocked.current = true;
+            centerRef.current = e.latlng;
+            setCenterLocked(true);
+        };
+
+        map.on('mousemove', onMouseMove);
+        map.on('mousedown', onMouseDown);
+
+        return () =>
+        {
+            map.off('mousemove', onMouseMove);
+            map.off('mousedown', onMouseDown);
+            setMousePos(null);
+            setCenterLocked(false);
+            setRadius(null);
+        };
+    }, [map, step, drawMode]);
 
     const handleStartDrawingMode = (mode: 'circle' | 'polygon') =>
     {
@@ -138,9 +182,47 @@ export default function GeofenceDrawPanel({ map }: GeofenceDrawPanelProps)
                 <>
                     <p className="text-sm text-zinc-600 dark:text-zinc-300">
                         {drawMode === 'circle'
-                            ? 'Cliquez et faites glisser pour dessiner un cercle.'
+                            ? centerLocked
+                                ? 'Définir le rayon.'
+                                : 'Déplacer puis cliquer pour placer le centre du cercle.'
                             : 'Cliquez pour ajouter des points. Double-cliquez pour terminer.'}
                     </p>
+
+                    {drawMode === 'circle' && (
+                        <>
+                            <div className="flex gap-2">
+                                <div className="flex-1">
+                                    <label className="text-xs text-zinc-400 dark:text-zinc-500">Latitude du centre</label>
+                                    <input
+                                        readOnly
+                                        value={mousePos ? mousePos.lat.toFixed(6) : '—'}
+                                        className="w-full rounded border px-2 py-1 text-sm font-mono bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300" />
+                                </div>
+                                <div className="flex-1">
+                                    <label className="text-xs text-zinc-400 dark:text-zinc-500">Longitude du centre</label>
+                                    <input
+                                        readOnly
+                                        value={mousePos ? mousePos.lng.toFixed(6) : '—'}
+                                        className="w-full rounded border px-2 py-1 text-sm font-mono bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300" />
+                                </div>
+                            </div>
+
+                            {centerLocked && (
+                                <div>
+                                    <label className="text-xs text-zinc-400 dark:text-zinc-500">Rayon</label>
+                                    <input
+                                        readOnly
+                                        value={radius !== null
+                                            ? radius >= 1000
+                                                ? `${(radius / 1000).toFixed(2)} km`
+                                                : `${radius} m`
+                                            : '—'}
+                                        className="w-full rounded border px-2 py-1 text-sm font-mono bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300" />
+                                </div>
+                            )}
+                        </>
+                    )}
+
                     <button
                         className="w-full rounded border px-3 py-2 text-sm cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800"
                         onClick={handleCancel}>
