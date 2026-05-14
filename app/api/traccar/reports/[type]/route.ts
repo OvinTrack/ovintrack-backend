@@ -26,7 +26,9 @@ export async function GET(
             ? `/api/reports/${type}?${queryString}`
             : `/api/reports/${type}`;
 
-        const report = await traccarFetch<unknown>(path);
+        const report = await traccarFetch<unknown>(path, {
+            headers: { Accept: 'application/json' },
+        });
         return NextResponse.json(report);
     }
     catch (error)
