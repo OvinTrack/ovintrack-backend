@@ -47,6 +47,7 @@ export async function POST(request: NextRequest)
             ...(body.disabled !== undefined && { disabled: body.disabled }),
             ...(body.deviceLimit !== undefined && { deviceLimit: body.deviceLimit }),
             ...(body.userLimit !== undefined && { userLimit: body.userLimit }),
+            ...(body.attributes !== undefined && { attributes: body.attributes }),
         };
 
         const user = await traccarFetch<FullTraccarUser>('/api/users', {

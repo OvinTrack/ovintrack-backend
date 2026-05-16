@@ -1,15 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import type { FullTraccarDevice } from "@/types/traccar-types";
+import { useRouter, useSearchParams } from "next/navigation";
+import type { FullTraccarDevice, FullTraccarUser } from "@/types/traccar-types";
 import DeviceForm from "./DeviceForm";
 
 type View = "list" | "create" | "edit";
 
 export default function DeviceList()
 {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const selectedUserId = searchParams.get("userId")?.trim() ?? "";
   const selectedUserName = searchParams.get("userName")?.trim() ?? "";
@@ -23,6 +24,25 @@ export default function DeviceList()
   const [selectedDevice, setSelectedDevice] = useState<FullTraccarDevice | undefined>(undefined);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
+  const [users, setUsers] = useState<FullTraccarUser[]>([]);
+
+  const usersById = useMemo(() =>
+  {
+    return new Map(users.map(user => [user.id, user]));
+  }, [users]);
+
+  const getOwnerUser = (device: FullTraccarDevice): FullTraccarUser | undefined =>
+  {
+    const ownerIdRaw = device.attributes?.eleveurId?.trim();
+    const ownerId = Number(ownerIdRaw);
+
+    if (!ownerIdRaw || !Number.isInteger(ownerId) || ownerId <= 0)
+    {
+      return undefined;
+    }
+
+    return usersById.get(ownerId);
+  };
 
   const handleFilterChange = (key: string, value: string) =>
   {
@@ -35,6 +55,8 @@ export default function DeviceList()
 
   const filteredDevices = devices.filter(device =>
   {
+    const ownerUser = getOwnerUser(device);
+
     const match = (value: string | undefined, key: string) =>
     {
       const f = filters[key]?.trim().toLowerCase();
@@ -56,14 +78,14 @@ export default function DeviceList()
       match(device.name, "name") &&
       match(device.uniqueId, "uniqueId") &&
       match(device.attributes?.DZId, "DZId") &&
-      match(device.attributes?.eleveurId, "eleveurId") &&
-      match(device.attributes?.eleveurNom, "eleveurNom") &&
-      match(device.attributes?.eleveurAdresse, "eleveurAdresse") &&
+      match(ownerUser?.attributes?.eleveurNumNational, "eleveurNumNational") &&
+      match(ownerUser?.name, "eleveurNom") &&
+      match(ownerUser?.attributes?.eleveurAdresse, "eleveurAdresse") &&
       match(device.attributes?.espace, "espace") &&
       match(device.attributes?.race, "race") &&
       match(device.attributes?.sexe, "sexe") &&
       match(device.attributes?.dateNaissance, "dateNaissance") &&
-      match(device.attributes?.statutReproducteur, "statutReproducteur") &&
+      match(ownerUser?.attributes?.statutReproducteur, "statutReproducteur") &&
       match(device.attributes?.origine, "origine") &&
       match(device.attributes?.status ?? device.attributes?.statut, "status")
     );
@@ -89,6 +111,16 @@ export default function DeviceList()
       }
 
       setDevices(data);
+
+      const usersResponse = await fetch("/api/traccar/users", { credentials: "include" });
+      if (usersResponse.ok)
+      {
+        setUsers(await usersResponse.json() as FullTraccarUser[]);
+      }
+      else
+      {
+        setUsers([]);
+      }
     }
     catch (err: unknown)
     {
@@ -100,7 +132,10 @@ export default function DeviceList()
     }
   }, [hasUserFilter, selectedUserId]);
 
-  useEffect(() => { void fetchDevices(); }, [fetchDevices]);
+  useEffect(() =>
+  {
+    queueMicrotask(() => { void fetchDevices(); });
+  }, [fetchDevices]);
 
   const showSuccess = (msg: string) =>
   {
@@ -118,6 +153,23 @@ export default function DeviceList()
   {
     setSelectedDevice(device);
     setView("edit");
+  };
+
+  const handleVisualize = (device: FullTraccarDevice) =>
+  {
+    const params = new URLSearchParams({ deviceId: String(device.id) });
+
+    if (hasUserFilter)
+    {
+      params.set("userId", selectedUserId);
+    }
+
+    if (selectedUserName)
+    {
+      params.set("userName", selectedUserName);
+    }
+
+    router.push(`/?${params.toString()}`);
   };
 
   const handleFormSuccess = async (savedDevice: FullTraccarDevice) =>
@@ -285,58 +337,73 @@ export default function DeviceList()
               ...Object.values(device.attributes ?? {}),
             ].join(" ").toLowerCase();
             return all.includes(g);
-          }).map(device => (
-            <div key={device.id} className="p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs text-gray-400">ID: <span className="font-mono">{device.id}</span></p>
-                  <p className="text-base font-semibold text-gray-900 mt-1 wrap-break-word">{device.name}</p>
-                  <p className="text-sm text-gray-600 font-mono mt-1 break-all">{device.uniqueId}</p>
-                  {device.attributes?.DZId && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">DZId :</span> {device.attributes.DZId}</p>}
-                  {device.attributes?.eleveurId && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">N° éleveur :</span> {device.attributes.eleveurId}</p>}
-                  {device.attributes?.eleveurNom && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Nom éleveur :</span> {device.attributes.eleveurNom}</p>}
-                  {device.attributes?.eleveurAdresse && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Adresse éleveur :</span> {device.attributes.eleveurAdresse}</p>}
-                  {device.attributes?.espace && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Espace :</span> {device.attributes.espace}</p>}
-                  {device.attributes?.race && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Race :</span> {device.attributes.race}</p>}
-                  {device.attributes?.sexe && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Sexe :</span> {device.attributes.sexe}</p>}
-                  {device.attributes?.dateNaissance && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Date de naissance :</span> {device.attributes.dateNaissance}</p>}
-                  {device.attributes?.statutReproducteur && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Statut reproducteur :</span> {device.attributes.statutReproducteur}</p>}
-                  {device.attributes?.origine && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Origine :</span> {device.attributes.origine}</p>}
-                  {(device.attributes?.status ?? device.attributes?.statut) && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Statut vaccinal :</span> {device.attributes.status ?? device.attributes.statut}</p>}
+          }).map(device =>
+          {
+            const ownerUser = getOwnerUser(device);
+
+            return (
+              <div key={device.id} className="p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs text-gray-400">ID: <span className="font-mono">{device.id}</span></p>
+                    <p className="text-base font-semibold text-gray-900 mt-1 wrap-break-word">{device.name}</p>
+                    <p className="text-sm text-gray-600 font-mono mt-1 break-all">{device.uniqueId}</p>
+                    {device.attributes?.DZId && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">DZId :</span> {device.attributes.DZId}</p>}
+                    {ownerUser?.attributes?.eleveurNumNational && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">N° éleveur :</span> {ownerUser.attributes.eleveurNumNational}</p>}
+                    {ownerUser?.name && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Nom éleveur :</span> {ownerUser.name}</p>}
+                    {ownerUser?.attributes?.eleveurAdresse && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Adresse éleveur :</span> {ownerUser.attributes.eleveurAdresse}</p>}
+                    {device.attributes?.espace && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Espace :</span> {device.attributes.espace}</p>}
+                    {device.attributes?.race && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Race :</span> {device.attributes.race}</p>}
+                    {device.attributes?.sexe && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Sexe :</span> {device.attributes.sexe}</p>}
+                    {device.attributes?.dateNaissance && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Date de naissance :</span> {device.attributes.dateNaissance}</p>}
+                    {ownerUser?.attributes?.statutReproducteur && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Statut reproducteur :</span> {ownerUser.attributes.statutReproducteur}</p>}
+                    {device.attributes?.origine && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Origine :</span> {device.attributes.origine}</p>}
+                    {(device.attributes?.status ?? device.attributes?.statut) && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Statut vaccinal :</span> {device.attributes.status ?? device.attributes.statut}</p>}
+                  </div>
+                </div>
+                <div className="mt-4 flex gap-2">
+                  <button
+                    onClick={() => handleVisualize(device)}
+                    aria-label={`Visualiser ${device.name}`}
+                    title="Visualiser"
+                    className="flex-1 text-emerald-600 border border-emerald-200 hover:text-emerald-800 px-3 py-2 rounded-lg hover:bg-emerald-50 transition hover:cursor-pointer flex items-center justify-center">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12Z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleEdit(device)}
+                    aria-label={`Modifier ${device.name}`}
+                    title="Modifier"
+                    className="flex-1 text-blue-600 border border-blue-200 hover:text-blue-800 px-3 py-2 rounded-lg hover:bg-blue-50 transition hover:cursor-pointer flex items-center justify-center">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => void handleDelete(device)}
+                    disabled={deletingId === device.id}
+                    aria-label={`Supprimer ${device.name}`}
+                    title="Supprimer"
+                    className="flex-1 text-red-600 border border-red-200 hover:text-red-800 px-3 py-2 rounded-lg hover:bg-red-50 transition disabled:opacity-50 hover:cursor-pointer flex items-center justify-center">
+                    {deletingId === device.id ? (
+                      <span className="text-xs">...</span>
+                    ) : (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
+                        <path d="M3 6h18" />
+                        <path d="M8 6V4h8v2" />
+                        <path d="M19 6l-1 14H6L5 6" />
+                        <path d="M10 11v6" />
+                        <path d="M14 11v6" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
               </div>
-              <div className="mt-4 flex gap-2">
-                <button
-                  onClick={() => handleEdit(device)}
-                  aria-label={`Modifier ${device.name}`}
-                  title="Modifier"
-                  className="flex-1 text-blue-600 border border-blue-200 hover:text-blue-800 px-3 py-2 rounded-lg hover:bg-blue-50 transition hover:cursor-pointer flex items-center justify-center">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
-                  </svg>
-                </button>
-                <button
-                  onClick={() => void handleDelete(device)}
-                  disabled={deletingId === device.id}
-                  aria-label={`Supprimer ${device.name}`}
-                  title="Supprimer"
-                  className="flex-1 text-red-600 border border-red-200 hover:text-red-800 px-3 py-2 rounded-lg hover:bg-red-50 transition disabled:opacity-50 hover:cursor-pointer flex items-center justify-center">
-                  {deletingId === device.id ? (
-                    <span className="text-xs">...</span>
-                  ) : (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
-                      <path d="M3 6h18" />
-                      <path d="M8 6V4h8v2" />
-                      <path d="M19 6l-1 14H6L5 6" />
-                      <path d="M10 11v6" />
-                      <path d="M14 11v6" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="hidden md:block overflow-x-auto">
@@ -365,7 +432,7 @@ export default function DeviceList()
                   ["name", "Nom"],
                   ["uniqueId", "Identifiant"],
                   ["DZId", "DZId"],
-                  ["eleveurId", "N° éleveur"],
+                  ["eleveurNumNational", "N° éleveur"],
                   ["eleveurNom", "Nom éleveur"],
                   ["eleveurAdresse", "Adresse éleveur"],
                   ["espace", "Espace"],
@@ -392,56 +459,71 @@ export default function DeviceList()
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredDevices.map(device => (
-                <tr key={device.id} className="hover:bg-gray-50 transition">
-                  <td className="px-4 py-4 text-gray-400 font-mono">{device.id}</td>
-                  <td className="px-4 py-4 font-medium text-gray-900">{device.name}</td>
-                  <td className="px-4 py-4 text-gray-600 font-mono">{device.uniqueId}</td>
-                  <td className="px-4 py-4 text-gray-600">{device.attributes?.DZId ?? ""}</td>
-                  <td className="px-4 py-4 text-gray-600">{device.attributes?.eleveurId ?? ""}</td>
-                  <td className="px-4 py-4 text-gray-600">{device.attributes?.eleveurNom ?? ""}</td>
-                  <td className="px-4 py-4 text-gray-600">{device.attributes?.eleveurAdresse ?? ""}</td>
-                  <td className="px-4 py-4 text-gray-600">{device.attributes?.espace ?? ""}</td>
-                  <td className="px-4 py-4 text-gray-600">{device.attributes?.race ?? ""}</td>
-                  <td className="px-4 py-4 text-gray-600">{device.attributes?.sexe ?? ""}</td>
-                  <td className="px-4 py-4 text-gray-600">{device.attributes?.dateNaissance ?? ""}</td>
-                  <td className="px-4 py-4 text-gray-600">{device.attributes?.statutReproducteur ?? ""}</td>
-                  <td className="px-4 py-4 text-gray-600">{device.attributes?.origine ?? ""}</td>
-                  <td className="px-4 py-4 text-gray-600">{device.attributes?.status ?? device.attributes?.statut ?? ""}</td>
-                  <td className="px-4 py-4 text-right whitespace-nowrap">
-                    <div className="inline-flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => handleEdit(device)}
-                        aria-label={`Modifier ${device.name}`}
-                        title="Modifier"
-                        className="text-blue-600 hover:text-blue-800 px-3 py-1 rounded-lg hover:bg-blue-50 transition hover:cursor-pointer inline-flex items-center justify-center">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
-                          <path d="M12 20h9" />
-                          <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => void handleDelete(device)}
-                        disabled={deletingId === device.id}
-                        aria-label={`Supprimer ${device.name}`}
-                        title="Supprimer"
-                        className="text-red-600 hover:text-red-800 px-3 py-1 rounded-lg hover:bg-red-50 transition disabled:opacity-50 hover:cursor-pointer inline-flex items-center justify-center">
-                        {deletingId === device.id ? (
-                          <span className="text-xs">...</span>
-                        ) : (
+              {filteredDevices.map(device =>
+              {
+                const ownerUser = getOwnerUser(device);
+
+                return (
+                  <tr key={device.id} className="hover:bg-gray-50 transition">
+                    <td className="px-4 py-4 text-gray-400 font-mono">{device.id}</td>
+                    <td className="px-4 py-4 font-medium text-gray-900">{device.name}</td>
+                    <td className="px-4 py-4 text-gray-600 font-mono">{device.uniqueId}</td>
+                    <td className="px-4 py-4 text-gray-600">{device.attributes?.DZId ?? ""}</td>
+                    <td className="px-4 py-4 text-gray-600">{ownerUser?.attributes?.eleveurNumNational ?? ""}</td>
+                    <td className="px-4 py-4 text-gray-600">{ownerUser?.name ?? ""}</td>
+                    <td className="px-4 py-4 text-gray-600">{ownerUser?.attributes?.eleveurAdresse ?? ""}</td>
+                    <td className="px-4 py-4 text-gray-600">{device.attributes?.espace ?? ""}</td>
+                    <td className="px-4 py-4 text-gray-600">{device.attributes?.race ?? ""}</td>
+                    <td className="px-4 py-4 text-gray-600">{device.attributes?.sexe ?? ""}</td>
+                    <td className="px-4 py-4 text-gray-600">{device.attributes?.dateNaissance ?? ""}</td>
+                    <td className="px-4 py-4 text-gray-600">{ownerUser?.attributes?.statutReproducteur ?? ""}</td>
+                    <td className="px-4 py-4 text-gray-600">{device.attributes?.origine ?? ""}</td>
+                    <td className="px-4 py-4 text-gray-600">{device.attributes?.status ?? device.attributes?.statut ?? ""}</td>
+                    <td className="px-4 py-4 text-right whitespace-nowrap">
+                      <div className="inline-flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleVisualize(device)}
+                          aria-label={`Visualiser ${device.name}`}
+                          title="Visualiser"
+                          className="text-emerald-600 hover:text-emerald-800 px-3 py-1 rounded-lg hover:bg-emerald-50 transition hover:cursor-pointer inline-flex items-center justify-center">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
-                            <path d="M3 6h18" />
-                            <path d="M8 6V4h8v2" />
-                            <path d="M19 6l-1 14H6L5 6" />
-                            <path d="M10 11v6" />
-                            <path d="M14 11v6" />
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12Z" />
+                            <circle cx="12" cy="12" r="3" />
                           </svg>
-                        )}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        </button>
+                        <button
+                          onClick={() => handleEdit(device)}
+                          aria-label={`Modifier ${device.name}`}
+                          title="Modifier"
+                          className="text-blue-600 hover:text-blue-800 px-3 py-1 rounded-lg hover:bg-blue-50 transition hover:cursor-pointer inline-flex items-center justify-center">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => void handleDelete(device)}
+                          disabled={deletingId === device.id}
+                          aria-label={`Supprimer ${device.name}`}
+                          title="Supprimer"
+                          className="text-red-600 hover:text-red-800 px-3 py-1 rounded-lg hover:bg-red-50 transition disabled:opacity-50 hover:cursor-pointer inline-flex items-center justify-center">
+                          {deletingId === device.id ? (
+                            <span className="text-xs">...</span>
+                          ) : (
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
+                              <path d="M3 6h18" />
+                              <path d="M8 6V4h8v2" />
+                              <path d="M19 6l-1 14H6L5 6" />
+                              <path d="M10 11v6" />
+                              <path d="M14 11v6" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

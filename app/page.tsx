@@ -13,6 +13,25 @@ function TraccarMapContent()
   const searchParams = useSearchParams();
   const selectedUserId = searchParams.get('userId');
   const selectedUserName = searchParams.get('userName')?.trim();
+  const selectedDeviceIdRaw = searchParams.get('deviceId')?.trim() ?? '';
+  const selectedDeviceId = Number(selectedDeviceIdRaw);
+  const hasDeviceFilter = Number.isInteger(selectedDeviceId) && selectedDeviceId > 0;
+  const clearDeviceFilterHref = (() =>
+  {
+    if (!selectedUserId)
+    {
+      return '/';
+    }
+
+    const params = new URLSearchParams({ userId: selectedUserId });
+
+    if (selectedUserName)
+    {
+      params.set('userName', selectedUserName);
+    }
+
+    return `/?${params.toString()}`;
+  })();
 
   useEffect(() =>
   {
@@ -41,7 +60,11 @@ function TraccarMapContent()
         }
 
         const ovins = await ovinsResponse.json() as Ovin[];
-        setPoints(ovins);
+        const filteredOvins = hasDeviceFilter
+          ? ovins.filter((ovin) => ovin.device.id === selectedDeviceId)
+          : ovins;
+
+        setPoints(filteredOvins);
       }
       catch
       {
@@ -62,7 +85,7 @@ function TraccarMapContent()
     {
       globalThis.removeEventListener(SESSION_CHANGED_EVENT, onSessionChanged);
     };
-  }, [selectedUserId]);
+  }, [hasDeviceFilter, selectedDeviceId, selectedUserId]);
 
   return (
     <main className="overflow-hidden">
@@ -77,6 +100,19 @@ function TraccarMapContent()
             </Link>
             <Link href="/" className="font-medium underline hover:no-underline">
               Retirer le filtre
+            </Link>
+          </div>
+        </div>
+      )}
+      {hasDeviceFilter && (
+        <div className="px-4 pt-4 sm:px-8">
+          <div className="inline-flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+            <span>
+              Visualisation du device #{selectedDeviceId}
+              {points[0]?.device.name ? ` (${points[0].device.name})` : ''}.
+            </span>
+            <Link href={clearDeviceFilterHref} className="font-medium underline hover:no-underline">
+              Retirer le filtre device
             </Link>
           </div>
         </div>

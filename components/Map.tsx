@@ -57,7 +57,7 @@ export default function MapComponent({ points }: MapProps)
                     title: p.device?.name ?? 'Nom inconnu',
                     uniqueId: p.device?.uniqueId ?? '',
                     DZId: p.device.attributes?.DZId ?? '',
-                    eleveurId: p.device.attributes?.eleveurId ?? '',
+                    eleveurNumNational: p.device.attributes?.eleveurNumNational ?? '',
                     espace: p.device.attributes?.espace ?? '',
                     race: p.device.attributes?.race ?? '',
                     sexe: p.device.attributes?.sexe ?? '',

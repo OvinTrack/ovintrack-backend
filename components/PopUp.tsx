@@ -4,17 +4,17 @@ import ReactDOM from 'react-dom/client';
 
 interface PopUpProps
 {
-    title: string;
-    uniqueId: string;
-    DZId: string;
-    eleveurId: string;
-    espace: string;
-    race: string;
-    sexe: string;
-    dateNaissance: string;
-    statutReproducteur: string;
-    origine: string;
-    status: string;
+  title: string;
+  uniqueId: string;
+  DZId: string;
+  eleveurNumNational: string;
+  espace: string;
+  race: string;
+  sexe: string;
+  dateNaissance: string;
+  statutReproducteur: string;
+  origine: string;
+  status: string;
 }
 
 export function renderPopup(marker: L.Marker, props: PopUpProps)
@@ -27,7 +27,7 @@ export function renderPopup(marker: L.Marker, props: PopUpProps)
       <h3>{props.title}</h3>
       <p>uniqueId : {props.uniqueId}</p>
       <p>DZId : {props.DZId}</p>
-      <p>Éleveur : {props.eleveurId}</p>
+      <p>Éleveur (n° national) : {props.eleveurNumNational}</p>
       <p>Espace : {props.espace}</p>
       <p>Race : {props.race}</p>
       <p>Sexe : {props.sexe}</p>

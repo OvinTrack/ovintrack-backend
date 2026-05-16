@@ -7,7 +7,7 @@ export interface TraccarDevice
 
 export interface FullTraccarDevice extends TraccarDevice
 {
-    attributes : Record<string, string>; // Traccar permettrait <string, string|boolean|number>
+    attributes: Record<string, string>; // Traccar permettrait <string, string|boolean|number>
 }
 
 export interface TraccarPosition

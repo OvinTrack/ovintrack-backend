@@ -46,6 +46,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams)
             ...(body.disabled !== undefined && { disabled: body.disabled }),
             ...(body.deviceLimit !== undefined && { deviceLimit: body.deviceLimit }),
             ...(body.userLimit !== undefined && { userLimit: body.userLimit }),
+            ...(body.attributes !== undefined && { attributes: body.attributes }),
             // N'envoie le mot de passe que s'il est explicitement fourni
             ...(body.password?.trim() && { password: body.password.trim() }),
         };

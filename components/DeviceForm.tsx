@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import type { FullTraccarDevice, TraccarDevice } from "@/types/traccar-types";
+import { useEffect, useState } from "react";
+import type { FullTraccarDevice, TraccarDevice, TraccarUser } from "@/types/traccar-types";
 
 interface DeviceFormProps
 {
@@ -54,14 +54,11 @@ interface DeviceFormData
   name: string;
   uniqueId: string;
   DZId: string;
-  eleveurId: string;
-  eleveurNom: string;
-  eleveurAdresse: string;
+  eleveurId: string;         // FK → ID du user Traccar propriétaire
   espace: string;
   race: string;
   sexe: string;
   dateNaissance: string;
-  statutReproducteur: string;
   origine: string;
   status: string;
 }
@@ -78,13 +75,10 @@ function buildAttributes(formData: DeviceFormData, baseAttributes: Record<string
   const fieldMappings: Array<[keyof DeviceFormData, string]> = [
     ["DZId", "DZId"],
     ["eleveurId", "eleveurId"],
-    ["eleveurNom", "eleveurNom"],
-    ["eleveurAdresse", "eleveurAdresse"],
     ["espace", "espace"],
     ["race", "race"],
     ["sexe", "sexe"],
     ["dateNaissance", "dateNaissance"],
-    ["statutReproducteur", "statutReproducteur"],
     ["origine", "origine"],
   ];
 
@@ -125,13 +119,10 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
     uniqueId: device?.uniqueId ?? "",
     DZId: device?.attributes?.DZId ?? "",
     eleveurId: device?.attributes?.eleveurId ?? "",
-    eleveurNom: device?.attributes?.eleveurNom ?? "",
-    eleveurAdresse: device?.attributes?.eleveurAdresse ?? "",
     espace: device?.attributes?.espace ?? "",
     race: device?.attributes?.race ?? "",
     sexe: device?.attributes?.sexe ?? "",
     dateNaissance: device?.attributes?.dateNaissance ?? "",
-    statutReproducteur: device?.attributes?.statutReproducteur ?? "",
     origine: device?.attributes?.origine ?? "",
     status: device?.attributes?.status ?? device?.attributes?.statut ?? "",
   });
@@ -141,8 +132,29 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
   const [uniqueIdMessage, setUniqueIdMessage] = useState("");
   const [isCheckingUniqueId, setIsCheckingUniqueId] = useState(false);
   const [isUniqueIdAvailable, setIsUniqueIdAvailable] = useState<boolean | null>(null);
+  const [users, setUsers] = useState<TraccarUser[]>([]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+  useEffect(() =>
+  {
+    const loadUsers = async () =>
+    {
+      try
+      {
+        const response = await fetch("/api/traccar/users", { credentials: "include" });
+        if (response.ok)
+        {
+          setUsers(await response.json() as TraccarUser[]);
+        }
+      }
+      catch
+      {
+        // Non bloquant : le select sera vide
+      }
+    };
+    void loadUsers();
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
   {
     const { name, value } = e.target;
 
@@ -388,36 +400,18 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
         </div>
 
         <div>
-          <label htmlFor="eleveurId" className={label}>Numéro national de l&apos;éleveur</label>
-          <input
+          <label htmlFor="eleveurId" className={label}>Éleveur (utilisateur propriétaire)</label>
+          <select
             id="eleveurId"
             className={input}
             name="eleveurId"
-            placeholder="Numéro national éleveur"
             value={formData.eleveurId}
-            onChange={handleChange} />
-        </div>
-
-        <div>
-          <label htmlFor="eleveurNom" className={label}>Nom de l&apos;éleveur</label>
-          <input
-            id="eleveurNom"
-            className={input}
-            name="eleveurNom"
-            placeholder="Nom de l'éleveur"
-            value={formData.eleveurNom}
-            onChange={handleChange} />
-        </div>
-
-        <div>
-          <label htmlFor="eleveurAdresse" className={label}>Adresse de l&apos;éleveur</label>
-          <input
-            id="eleveurAdresse"
-            className={input}
-            name="eleveurAdresse"
-            placeholder="Adresse de l'éleveur"
-            value={formData.eleveurAdresse}
-            onChange={handleChange} />
+            onChange={handleChange}>
+            <option value="">— Aucun —</option>
+            {users.map(u => (
+              <option key={u.id} value={String(u.id)}>{u.name}</option>
+            ))}
+          </select>
         </div>
 
         <div>
@@ -479,34 +473,6 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
             name="dateNaissance"
             value={formData.dateNaissance}
             onChange={handleChange} />
-        </div>
-
-        <div>
-          <span className={label}>Statut reproducteur</span>
-          <div className="flex items-center gap-6">
-            <label htmlFor="statut-reproducteur-geniteur" className="flex items-center gap-2 text-sm text-gray-700">
-              <input
-                id="statut-reproducteur-geniteur"
-                type="radio"
-                name="statutReproducteur"
-                value="Géniteur"
-                checked={formData.statutReproducteur === "Géniteur"}
-                onChange={handleChange}
-                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500" />
-              <span>Géniteur</span>
-            </label>
-            <label htmlFor="statut-reproducteur-non-geniteur" className="flex items-center gap-2 text-sm text-gray-700">
-              <input
-                id="statut-reproducteur-non-geniteur"
-                type="radio"
-                name="statutReproducteur"
-                value="Non Géniteur"
-                checked={formData.statutReproducteur === "Non Géniteur"}
-                onChange={handleChange}
-                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500" />
-              <span>Non Géniteur</span>
-            </label>
-          </div>
         </div>
 
         <div>

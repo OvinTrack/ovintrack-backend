@@ -10,15 +10,73 @@ interface UserFormProps
   onCancel: () => void;
 }
 
+interface UserFormData
+{
+  name: string;
+  email: string;
+  password: string;
+  phone: string;
+  eleveurNumNational: string;
+  eleveurAdresse: string;
+  statutReproducteur: string;
+  administrator: boolean;
+  disabled: boolean;
+  deviceLimit: number;
+  userLimit: number;
+}
+
+function buildUserAttributes(formData: UserFormData, baseAttributes: Record<string, string>): Record<string, string>
+{
+  const attributes: Record<string, string> = { ...baseAttributes };
+
+  const eleveurNumNational = formData.eleveurNumNational.trim();
+
+  if (eleveurNumNational)
+  {
+    attributes.eleveurNumNational = eleveurNumNational;
+  }
+  else
+  {
+    delete attributes.eleveurNumNational;
+  }
+
+  const eleveurAdresse = formData.eleveurAdresse.trim();
+
+  if (eleveurAdresse)
+  {
+    attributes.eleveurAdresse = eleveurAdresse;
+  }
+  else
+  {
+    delete attributes.eleveurAdresse;
+  }
+
+  const statutReproducteur = formData.statutReproducteur.trim();
+
+  if (statutReproducteur)
+  {
+    attributes.statutReproducteur = statutReproducteur;
+  }
+  else
+  {
+    delete attributes.statutReproducteur;
+  }
+
+  return attributes;
+}
+
 export default function UserForm({ user, onSuccess, onCancel }: Readonly<UserFormProps>)
 {
   const isEditing = user !== undefined;
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<UserFormData>({
     name: user?.name ?? "",
     email: user?.email ?? "",
     password: "",
     phone: user?.phone ?? "",
+    eleveurNumNational: user?.attributes?.eleveurNumNational ?? "",
+    eleveurAdresse: user?.attributes?.eleveurAdresse ?? "",
+    statutReproducteur: user?.attributes?.statutReproducteur ?? "",
     administrator: user?.administrator ?? false,
     disabled: user?.disabled ?? false,
     deviceLimit: user?.deviceLimit ?? -1,
@@ -66,6 +124,8 @@ export default function UserForm({ user, onSuccess, onCancel }: Readonly<UserFor
       return;
     }
 
+    const attributes = buildUserAttributes(formData, user?.attributes ?? {});
+
     const payload: Record<string, unknown> = {
       name: formData.name.trim(),
       email: formData.email.trim(),
@@ -74,6 +134,7 @@ export default function UserForm({ user, onSuccess, onCancel }: Readonly<UserFor
       disabled: formData.disabled,
       deviceLimit: formData.deviceLimit,
       userLimit: formData.userLimit,
+      ...(Object.keys(attributes).length > 0 && { attributes }),
     };
 
     // N'envoie le mot de passe que si renseigné (obligatoire à la création, optionnel en édition)
@@ -180,6 +241,56 @@ export default function UserForm({ user, onSuccess, onCancel }: Readonly<UserFor
             placeholder="+33..."
             value={formData.phone}
             onChange={handleChange} />
+        </div>
+
+        <div>
+          <label htmlFor="eleveurNumNational" className={label}>Numéro national de l&apos;éleveur</label>
+          <input
+            id="eleveurNumNational"
+            className={input}
+            name="eleveurNumNational"
+            placeholder="Numéro national éleveur"
+            value={formData.eleveurNumNational}
+            onChange={handleChange} />
+        </div>
+
+        <div>
+          <label htmlFor="eleveurAdresse" className={label}>Adresse de l&apos;éleveur</label>
+          <input
+            id="eleveurAdresse"
+            className={input}
+            name="eleveurAdresse"
+            placeholder="Adresse de l'éleveur"
+            value={formData.eleveurAdresse}
+            onChange={handleChange} />
+        </div>
+
+        <div>
+          <span className={label}>Statut reproducteur</span>
+          <div className="flex items-center gap-6">
+            <label htmlFor="user-statut-reproducteur-geniteur" className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                id="user-statut-reproducteur-geniteur"
+                type="radio"
+                name="statutReproducteur"
+                value="Géniteur"
+                checked={formData.statutReproducteur === "Géniteur"}
+                onChange={handleChange}
+                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500" />
+              <span>Géniteur</span>
+            </label>
+            <label htmlFor="user-statut-reproducteur-non-geniteur" className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                id="user-statut-reproducteur-non-geniteur"
+                type="radio"
+                name="statutReproducteur"
+                value="Non Géniteur"
+                checked={formData.statutReproducteur === "Non Géniteur"}
+                onChange={handleChange}
+                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500" />
+              <span>Non Géniteur</span>
+            </label>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">

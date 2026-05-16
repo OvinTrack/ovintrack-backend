@@ -43,7 +43,10 @@ export default function UserList()
     }
   };
 
-  useEffect(() => { void fetchUsers(); }, []);
+  useEffect(() =>
+  {
+    queueMicrotask(() => { void fetchUsers(); });
+  }, []);
 
   const showSuccess = (msg: string) =>
   {
@@ -152,6 +155,21 @@ export default function UserList()
                 <p className="text-xs text-gray-400">ID: <span className="font-mono">{user.id}</span></p>
                 <p className="text-base font-semibold text-gray-900 mt-1">{user.name}</p>
                 <p className="text-sm text-gray-600 mt-0.5">{user.email}</p>
+                {user.attributes?.eleveurNumNational && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    <span className="font-medium">N° éleveur :</span> {user.attributes.eleveurNumNational}
+                  </p>
+                )}
+                {user.attributes?.eleveurAdresse && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    <span className="font-medium">Adresse :</span> {user.attributes.eleveurAdresse}
+                  </p>
+                )}
+                {user.attributes?.statutReproducteur && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    <span className="font-medium">Statut reprod. :</span> {user.attributes.statutReproducteur}
+                  </p>
+                )}
                 {user.administrator && (
                   <span className="inline-block mt-1 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Admin</span>
                 )}
@@ -211,6 +229,9 @@ export default function UserList()
                 <th className="text-left px-6 py-3 font-semibold text-gray-600">ID</th>
                 <th className="text-left px-6 py-3 font-semibold text-gray-600">Nom</th>
                 <th className="text-left px-6 py-3 font-semibold text-gray-600">Email</th>
+                <th className="text-left px-6 py-3 font-semibold text-gray-600">N° éleveur</th>
+                <th className="text-left px-6 py-3 font-semibold text-gray-600">Adresse</th>
+                <th className="text-left px-6 py-3 font-semibold text-gray-600">Statut reprod.</th>
                 <th className="text-left px-6 py-3 font-semibold text-gray-600">Rôle</th>
                 <th className="text-center px-6 py-3 font-semibold text-gray-600">Actions</th>
               </tr>
@@ -226,6 +247,9 @@ export default function UserList()
                     )}
                   </td>
                   <td className="px-6 py-4 text-gray-600">{user.email}</td>
+                  <td className="px-6 py-4 text-gray-600">{user.attributes?.eleveurNumNational ?? ""}</td>
+                  <td className="px-6 py-4 text-gray-600">{user.attributes?.eleveurAdresse ?? ""}</td>
+                  <td className="px-6 py-4 text-gray-600">{user.attributes?.statutReproducteur ?? ""}</td>
                   <td className="px-6 py-4">
                     {user.administrator
                       ? <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Admin</span>
@@ -284,7 +308,7 @@ export default function UserList()
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">Gestion des utilisateurs</h1>
         <button
