@@ -38,6 +38,9 @@ export async function POST(request: NextRequest)
 
         const currentUser = await traccarFetch<FullTraccarUser>('/api/session');
 
+        const targetUserId = body.attributes?.userId ?? (currentUser?.id != null ? String(currentUser.id) : undefined);
+        const targetUserEmail = body.attributes?.userEmail ?? currentUser?.email;
+
         const payload: Partial<TraccarGeofence> = {
             name: body.name.trim(),
             area: body.area.trim(),
@@ -45,8 +48,8 @@ export async function POST(request: NextRequest)
             calendarId: body.calendarId ?? 0,
             attributes: {
                 ...body.attributes,
-                ...(currentUser?.id != null && { userId: String(currentUser.id) }),
-                ...(currentUser?.email && { userEmail: currentUser.email }),
+                ...(targetUserId != null && { userId: targetUserId }),
+                ...(targetUserEmail && { userEmail: targetUserEmail }),
             },
         };
 

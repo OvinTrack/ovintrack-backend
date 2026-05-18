@@ -4,7 +4,7 @@ import { forwardRef, useEffect, useRef, useState } from 'react';
 import type { LatLng, Map as LeafletMap } from 'leaflet';
 import { useLeafletDraw } from '@/hooks/useLeafletDraw';
 import { leafletLayerToWkt } from '@/lib/geofence-wkt';
-import type { ApiError } from '@/types/traccar-types';
+import type { ApiError, TraccarUser } from '@/types/traccar-types';
 import { GEOFENCES_CHANGED_EVENT } from '@/lib/utils';
 
 interface GeofenceDrawPanelProps
@@ -22,6 +22,8 @@ const GeofenceDrawPanel = forwardRef<HTMLDivElement, GeofenceDrawPanelProps>(fun
     const [drawMode, setDrawMode] = useState<'circle' | 'polygon'>('circle');
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
+    const [selectedUserId, setSelectedUserId] = useState('');
+    const [users, setUsers] = useState<TraccarUser[]>([]);
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const [mousePos, setMousePos] = useState<{ lat: number; lng: number } | null>(null);
@@ -35,6 +37,14 @@ const GeofenceDrawPanel = forwardRef<HTMLDivElement, GeofenceDrawPanelProps>(fun
             setStep('form');
         }
     }, [drawnLayer]);
+
+    useEffect(() =>
+    {
+        fetch('/api/traccar/users')
+            .then((r) => r.json())
+            .then((data) => setUsers(data as TraccarUser[]))
+            .catch(() => setUsers([]));
+    }, []);
 
     const posLocked = useRef(false);
     const centerRef = useRef<LatLng | null>(null);
@@ -93,6 +103,7 @@ const GeofenceDrawPanel = forwardRef<HTMLDivElement, GeofenceDrawPanelProps>(fun
         setStep('idle');
         setName('');
         setDescription('');
+        setSelectedUserId('');
         setMessage('');
     };
 
@@ -123,10 +134,15 @@ const GeofenceDrawPanel = forwardRef<HTMLDivElement, GeofenceDrawPanelProps>(fun
 
         try
         {
+            const selectedUser = users.find((u) => String(u.id) === selectedUserId);
+            const attributes = selectedUser
+                ? { userId: String(selectedUser.id), userEmail: selectedUser.email }
+                : undefined;
+
             const response = await fetch('/api/traccar/geofences', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: name.trim(), description: description.trim(), area }),
+                body: JSON.stringify({ name: name.trim(), description: description.trim(), area, attributes }),
             });
 
             if (!response.ok)
@@ -141,6 +157,7 @@ const GeofenceDrawPanel = forwardRef<HTMLDivElement, GeofenceDrawPanelProps>(fun
             setStep('idle');
             setName('');
             setDescription('');
+            setSelectedUserId('');
         }
         catch (error)
         {
@@ -248,6 +265,16 @@ const GeofenceDrawPanel = forwardRef<HTMLDivElement, GeofenceDrawPanelProps>(fun
                         placeholder="Description (optionnel)"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)} />
+
+                    <select
+                        className="w-full rounded border p-2 text-sm bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
+                        value={selectedUserId}
+                        onChange={(e) => setSelectedUserId(e.target.value)}>
+                        <option value="">— Aucun utilisateur —</option>
+                        {users.map((u) => (
+                            <option key={u.id} value={String(u.id)}>{u.name}</option>
+                        ))}
+                    </select>
 
                     {message && <p className="text-sm text-red-500">{message}</p>}
 
