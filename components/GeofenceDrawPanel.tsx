@@ -170,34 +170,34 @@ const GeofenceDrawPanel = forwardRef<HTMLDivElement, GeofenceDrawPanelProps>(fun
     };
 
     return (
-        <div ref={ref} className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[1000] w-[min(24rem,calc(100vw-2rem))] rounded-2xl border border-zinc-200 bg-white/90 shadow-lg backdrop-blur dark:border-zinc-700 dark:bg-zinc-950/90 p-4 space-y-3">
+        <div ref={ref} className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[1000] w-[min(24rem,calc(100vw-2rem))] rounded-2xl border border-gray-200 bg-white shadow-md p-4 space-y-3">
 
             {step === 'idle' && (
                 <>
-                    <p className="text-sm font-semibold text-zinc-600 dark:text-zinc-300">Nouveau périmètre</p>
+                    <p className="text-sm font-semibold text-gray-600">Nouveau périmètre</p>
 
                     <div className="flex gap-2">
                         <button
-                            className={`flex-1 rounded border px-3 py-2 text-sm cursor-pointer ${drawMode === 'circle' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'}`}
+                            className={`flex-1 rounded border px-3 py-2 text-sm cursor-pointer ${drawMode === 'circle' ? 'bg-gray-900 text-white' : 'hover:bg-gray-100'}`}
                             onClick={() => { setDrawMode('circle'); handleStartDrawingMode('circle'); }}
                             disabled={!map}>
                             Cercle
                         </button>
                         <button
-                            className={`flex-1 rounded border px-3 py-2 text-sm cursor-pointer ${drawMode === 'polygon' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'}`}
+                            className={`flex-1 rounded border px-3 py-2 text-sm cursor-pointer ${drawMode === 'polygon' ? 'bg-gray-900 text-white' : 'hover:bg-gray-100'}`}
                             onClick={() => { setDrawMode('polygon'); handleStartDrawingMode('polygon'); }}
                             disabled={!map}>
                             Polygone
                         </button>
                     </div>
 
-                    {message && <p className="text-sm text-green-600 dark:text-green-400">{message}</p>}
+                    {message && <p className="text-sm text-green-600">{message}</p>}
                 </>
             )}
 
             {step === 'drawing' && (
                 <>
-                    <p className="text-sm text-zinc-600 dark:text-zinc-300">
+                    <p className="text-sm text-gray-600">
                         {drawMode === 'circle'
                             ? centerLocked
                                 ? 'Définir le rayon.'
@@ -209,24 +209,24 @@ const GeofenceDrawPanel = forwardRef<HTMLDivElement, GeofenceDrawPanelProps>(fun
                         <>
                             <div className="flex gap-2">
                                 <div className="flex-1">
-                                    <label className="text-xs text-zinc-400 dark:text-zinc-500">Latitude du centre</label>
+                                    <label className="text-xs text-gray-400">Latitude du centre</label>
                                     <input
                                         readOnly
                                         value={mousePos ? mousePos.lat.toFixed(6) : '—'}
-                                        className="w-full rounded border px-2 py-1 text-sm font-mono bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300" />
+                                        className="w-full rounded border px-2 py-1 text-sm font-mono bg-gray-50 text-gray-700" />
                                 </div>
                                 <div className="flex-1">
-                                    <label className="text-xs text-zinc-400 dark:text-zinc-500">Longitude du centre</label>
+                                    <label className="text-xs text-gray-400">Longitude du centre</label>
                                     <input
                                         readOnly
                                         value={mousePos ? mousePos.lng.toFixed(6) : '—'}
-                                        className="w-full rounded border px-2 py-1 text-sm font-mono bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300" />
+                                        className="w-full rounded border px-2 py-1 text-sm font-mono bg-gray-50 text-gray-700" />
                                 </div>
                             </div>
 
                             {centerLocked && (
                                 <div>
-                                    <label className="text-xs text-zinc-400 dark:text-zinc-500">Rayon</label>
+                                    <label className="text-xs text-gray-400">Rayon</label>
                                     <input
                                         readOnly
                                         value={radius !== null
@@ -234,14 +234,14 @@ const GeofenceDrawPanel = forwardRef<HTMLDivElement, GeofenceDrawPanelProps>(fun
                                                 ? `${(radius / 1000).toFixed(2)} km`
                                                 : `${radius} m`
                                             : '—'}
-                                        className="w-full rounded border px-2 py-1 text-sm font-mono bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300" />
+                                        className="w-full rounded border px-2 py-1 text-sm font-mono bg-gray-50 text-gray-700" />
                                 </div>
                             )}
                         </>
                     )}
 
                     <button
-                        className="w-full rounded border px-3 py-2 text-sm cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                        className="w-full rounded border px-3 py-2 text-sm cursor-pointer hover:bg-gray-100"
                         onClick={handleCancel}>
                         Annuler
                     </button>
@@ -250,7 +250,7 @@ const GeofenceDrawPanel = forwardRef<HTMLDivElement, GeofenceDrawPanelProps>(fun
 
             {step === 'form' && (
                 <>
-                    <p className="text-sm font-semibold text-zinc-600 dark:text-zinc-300">Nommer le périmètre</p>
+                    <p className="text-sm font-semibold text-gray-600">Nommer le périmètre</p>
 
                     <input
                         className="w-full rounded border p-2 text-sm"
@@ -267,7 +267,7 @@ const GeofenceDrawPanel = forwardRef<HTMLDivElement, GeofenceDrawPanelProps>(fun
                         onChange={(e) => setDescription(e.target.value)} />
 
                     <select
-                        className="w-full rounded border p-2 text-sm bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
+                        className="w-full rounded border p-2 text-sm bg-white text-gray-700"
                         value={selectedUserId}
                         onChange={(e) => setSelectedUserId(e.target.value)}>
                         <option value="">— Aucun utilisateur —</option>
@@ -280,13 +280,13 @@ const GeofenceDrawPanel = forwardRef<HTMLDivElement, GeofenceDrawPanelProps>(fun
 
                     <div className="flex gap-2">
                         <button
-                            className="flex-1 rounded border px-3 py-2 text-sm cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            className="flex-1 rounded border px-3 py-2 text-sm cursor-pointer hover:bg-gray-100"
                             onClick={handleCancel}
                             disabled={loading}>
                             Annuler
                         </button>
                         <button
-                            className="flex-1 rounded border px-3 py-2 text-sm cursor-pointer bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 disabled:opacity-50"
+                            className="flex-1 rounded border px-3 py-2 text-sm cursor-pointer bg-blue-600 text-white disabled:opacity-50"
                             onClick={handleSubmit}
                             disabled={loading}>
                             {loading ? 'Enregistrement...' : 'Enregistrer'}

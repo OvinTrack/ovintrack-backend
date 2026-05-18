@@ -184,7 +184,7 @@ export default function GeofencesPage()
         geofenceLayersRef.current.forEach((layer, id) =>
         {
             layer.setStyle(id === selectedGeofenceId
-                ? { color: '#16a34a', weight: 4, fillOpacity: 0.4 }
+                ? { color: '#2563eb', weight: 4, fillOpacity: 0.4 }
                 : { color: '#3388ff', weight: 3, fillOpacity: 0.2 }
             );
         });
