@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type { LayerGroup, Map as LeafletMap, Path } from 'leaflet';
 import type { Ovin, TraccarGeofence } from '@/types/traccar-types';
 import GeofenceDrawPanel from '@/components/GeofenceDrawPanel';
@@ -10,6 +11,7 @@ import { fitBoundsToGeofences, wktToLeafletLayer } from '@/lib/geofence-wkt';
 
 export default function GeofencesPage()
 {
+    const router = useRouter();
     const containerRef = useRef<HTMLDivElement | null>(null);
     const mapInstance = useRef<LeafletMap | null>(null);
     const [map, setMap] = useState<LeafletMap | null>(null);
@@ -28,14 +30,13 @@ export default function GeofencesPage()
             {
                 const session = await fetch('/api/session').then((r) => r.json()) as { token?: string; administrator?: boolean };
 
-                if (!session.token)
+                if (!session.token || !session.administrator)
                 {
-                    setPoints([]);
-                    setIsAdmin(false);
+                    router.replace('/');
                     return;
                 }
 
-                setIsAdmin(session.administrator ?? false);
+                setIsAdmin(true);
 
                 const ovinsResponse = await fetch('/api/ovins');
 
