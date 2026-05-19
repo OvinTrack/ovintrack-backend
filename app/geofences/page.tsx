@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { LayerGroup, Map as LeafletMap, Path } from 'leaflet';
-import type { Ovin, TraccarGeofence } from '@/types/traccar-types';
+import type { FullTraccarUser, Ovin, TraccarGeofence } from '@/types/traccar-types';
 import GeofenceDrawPanel from '@/components/GeofenceDrawPanel';
 import GeofenceList from '@/components/GeofenceList';
 import { GEOFENCES_CHANGED_EVENT, SESSION_CHANGED_EVENT } from '@/lib/utils';
@@ -17,6 +17,7 @@ export default function GeofencesPage()
     const [map, setMap] = useState<LeafletMap | null>(null);
     const [points, setPoints] = useState<Ovin[]>([]);
     const [geofences, setGeofences] = useState<TraccarGeofence[]>([]);
+    const [users, setUsers] = useState<FullTraccarUser[]>([]);
     const [isAdmin, setIsAdmin] = useState(false);
     const [selectedGeofenceId, setSelectedGeofenceId] = useState<number | null>(null);
     const geofenceLayersRef = useRef<Map<number, Path>>(new Map());
@@ -54,6 +55,12 @@ export default function GeofencesPage()
                 {
                     const data = await geofencesResponse.json() as TraccarGeofence[];
                     setGeofences(data);
+                }
+
+                const usersResponse = await fetch('/api/traccar/users', { credentials: 'include' });
+                if (usersResponse.ok)
+                {
+                    setUsers(await usersResponse.json() as FullTraccarUser[]);
                 }
             }
             catch
@@ -213,7 +220,7 @@ export default function GeofencesPage()
     return (
         <main className="relative w-screen h-screen overflow-hidden">
             <div ref={containerRef} className="w-full h-full" />
-            <GeofenceList geofences={geofences} isAdmin={isAdmin} selectedGeofenceId={selectedGeofenceId} onSelect={setSelectedGeofenceId} />
+            <GeofenceList geofences={geofences} users={users} isAdmin={isAdmin} selectedGeofenceId={selectedGeofenceId} onSelect={setSelectedGeofenceId} />
             <GeofenceDrawPanel ref={drawPanelRef} map={map} />
         </main>
     );
