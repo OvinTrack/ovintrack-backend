@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import type { FullTraccarUser, TraccarGeofence } from '@/types/traccar-types';
+import type { FullTraccarUser, TraccarDevice, TraccarGeofence } from '@/types/traccar-types';
 import { getTraccarErrorPayload, traccarAdminFetch, traccarFetch } from '@/lib/traccar-session';
+import { linkDeviceToGeofence, linkUserToGeofence } from '@/lib/traccar-permissions';
 
 export async function GET()
 {
@@ -56,6 +57,40 @@ export async function POST(request: NextRequest)
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
         });
+
+        if (geofence && targetUserId)
+        {
+            try
+            {
+                await linkUserToGeofence(Number(targetUserId), geofence.id);
+            }
+            catch (permissionError)
+            {
+                const { status, body: permBody } = getTraccarErrorPayload(permissionError);
+                console.warn(
+                    `[traccar/geofences] User permission assign failed for userId=${targetUserId}, geofenceId=${geofence.id}, status=${status}`,
+                    permBody,
+                );
+            }
+
+            const devices = await traccarAdminFetch<TraccarDevice[]>(`/api/devices?userId=${targetUserId}`) ?? [];
+
+            for (const device of devices)
+            {
+                try
+                {
+                    await linkDeviceToGeofence(device.id, geofence.id);
+                }
+                catch (permissionError)
+                {
+                    const { status, body: permBody } = getTraccarErrorPayload(permissionError);
+                    console.warn(
+                        `[traccar/geofences] Permission assign failed for deviceId=${device.id}, geofenceId=${geofence.id}, status=${status}`,
+                        permBody,
+                    );
+                }
+            }
+        }
 
         return NextResponse.json(geofence, { status: 201 });
     }
