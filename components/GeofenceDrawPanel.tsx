@@ -136,7 +136,7 @@ const GeofenceDrawPanel = forwardRef<HTMLDivElement, GeofenceDrawPanelProps>(fun
         {
             const selectedUser = users.find((u) => String(u.id) === selectedUserId);
             const attributes = selectedUser
-                ? { userId: String(selectedUser.id), userEmail: selectedUser.email }
+                ? { userId: String(selectedUser.id) }
                 : undefined;
 
             const response = await fetch('/api/traccar/geofences', {
