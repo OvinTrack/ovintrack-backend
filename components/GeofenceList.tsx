@@ -1,21 +1,24 @@
 'use client';
 
-import { useState } from 'react';
-import type { TraccarGeofence } from '@/types/traccar-types';
+import { useMemo, useState } from 'react';
+import type { FullTraccarUser, TraccarGeofence } from '@/types/traccar-types';
 import { GEOFENCES_CHANGED_EVENT } from '@/lib/utils';
 
 interface GeofenceListProps
 {
     geofences: TraccarGeofence[];
+    users: FullTraccarUser[];
     isAdmin: boolean;
     selectedGeofenceId: number | null;
     onSelect: (id: number | null) => void;
 }
 
-export default function GeofenceList({ geofences, isAdmin, selectedGeofenceId, onSelect }: Readonly<GeofenceListProps>)
+export default function GeofenceList({ geofences, users, isAdmin, selectedGeofenceId, onSelect }: Readonly<GeofenceListProps>)
 {
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [error, setError] = useState('');
+
+    const usersById = useMemo(() => new Map(users.map((u) => [u.id, u])), [users]);
 
     const handleDelete = async (geofence: TraccarGeofence) =>
     {
@@ -68,9 +71,9 @@ export default function GeofenceList({ geofences, isAdmin, selectedGeofenceId, o
                         <span className="text-sm text-gray-700 truncate" title={geofence.name}>
                             {geofence.name}
                         </span>
-                        {isAdmin && geofence.attributes?.userEmail && (
-                            <span className="text-xs text-gray-400 truncate" title={geofence.attributes.userEmail}>
-                                {geofence.attributes.userEmail}
+                        {isAdmin && geofence.attributes?.userId && (
+                            <span className="text-xs text-gray-400 truncate" title={usersById.get(Number(geofence.attributes.userId))?.name}>
+                                {usersById.get(Number(geofence.attributes.userId))?.name}
                             </span>
                         )}
                     </button>
