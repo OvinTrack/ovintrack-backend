@@ -39,7 +39,6 @@ export async function POST(request: NextRequest)
         const currentUser = await traccarFetch<FullTraccarUser>('/api/session');
 
         const targetUserId = body.attributes?.userId ?? (currentUser?.id != null ? String(currentUser.id) : undefined);
-        const targetUserEmail = body.attributes?.userEmail ?? currentUser?.email;
 
         const payload: Partial<TraccarGeofence> = {
             name: body.name.trim(),
@@ -49,7 +48,6 @@ export async function POST(request: NextRequest)
             attributes: {
                 ...body.attributes,
                 ...(targetUserId != null && { userId: targetUserId }),
-                ...(targetUserEmail && { userEmail: targetUserEmail }),
             },
         };
 
