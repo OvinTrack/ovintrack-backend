@@ -1,5 +1,3 @@
-// PopUp.tsx
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 
 interface PopUpProps
@@ -7,6 +5,7 @@ interface PopUpProps
   title: string;
   uniqueId: string;
   DZId: string;
+  eleveurName: string;
   eleveurNumNational: string;
   espace: string;
   race: string;
@@ -27,7 +26,8 @@ export function renderPopup(marker: L.Marker, props: PopUpProps)
       <h3>{props.title}</h3>
       <p>uniqueId : {props.uniqueId}</p>
       <p>DZId : {props.DZId}</p>
-      <p>Éleveur (n° national) : {props.eleveurNumNational}</p>
+      <p>Nom éleveur : {props.eleveurName}</p>
+      <p>N° national éleveur : {props.eleveurNumNational}</p>
       <p>Espace : {props.espace}</p>
       <p>Race : {props.race}</p>
       <p>Sexe : {props.sexe}</p>

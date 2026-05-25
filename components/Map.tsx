@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import type { LayerGroup, Map as LeafletMap } from "leaflet";
 import { Ovin } from "@/types/traccar-types";
 import { renderPopup } from './PopUp';
+import { formatDateFr } from "@/lib/utils";
 
 type MapProps = { readonly points: Ovin[]; };
 
@@ -57,12 +58,13 @@ export default function MapComponent({ points }: MapProps)
                     title: p.device?.name ?? 'Nom inconnu',
                     uniqueId: p.device?.uniqueId ?? '',
                     DZId: p.device.attributes?.DZId ?? '',
-                    eleveurNumNational: p.device.attributes?.eleveurNumNational ?? '',
+                    eleveurName: p.owner?.name ?? 'Utilisateur inconnu',
+                    eleveurNumNational: p.owner?.attributes?.eleveurNumNational ?? '',
                     espace: p.device.attributes?.espace ?? '',
                     race: p.device.attributes?.race ?? '',
                     sexe: p.device.attributes?.sexe ?? '',
-                    dateNaissance: p.device.attributes?.dateNaissance ?? '',
-                    statutReproducteur: p.device.attributes?.statutReproducteur ?? '',
+                    dateNaissance: formatDateFr(p.device.attributes?.dateNaissance),
+                    statutReproducteur: p.owner?.attributes?.statutReproducteur ?? '',
                     origine: p.device.attributes?.origine ?? '',
                     status: p.device.attributes?.status ?? p.device.attributes?.statut ?? '',
                 });

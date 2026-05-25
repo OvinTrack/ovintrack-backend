@@ -68,5 +68,6 @@ export interface ApiError
 export interface Ovin
 {
     device: FullTraccarDevice;
+    owner: FullTraccarUser;
     position: TraccarPosition;
 }

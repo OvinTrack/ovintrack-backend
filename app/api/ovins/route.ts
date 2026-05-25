@@ -42,11 +42,16 @@ export async function GET(request: NextRequest)
         for (const device of devices)
         {
             const positions = await traccarFetch<TraccarPosition[]>(`/api/positions?deviceId=${device.id}`) ?? [];
+            const owner = await traccarFetch<FullTraccarUser>(`/api/users/${device.attributes?.eleveurId ?? 0}`).catch(() => null);
 
             if (positions.length !== 0)
             {
                 const ovin: Ovin = {
                     device,
+                    owner: owner ?? ({
+                       id: device.attributes?.eleveurId ?? 0,
+                        name: 'Utilisateur inconnu',
+                    } as unknown as FullTraccarUser),
                     position: positions[0],
                 };
 
