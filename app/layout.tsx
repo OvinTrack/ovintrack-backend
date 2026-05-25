@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Image from "next/image";
 import HeaderNav from "@/components/HeaderNav";
 import "./globals.css";
 
@@ -28,14 +29,15 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <header className="relative isolate flex h-72 w-full overflow-hidden">
-          <div className="absolute inset-0 bg-[url('/images/paysage.png')] bg-cover bg-center" />
-          <div className="relative mx-auto flex w-full max-w-6xl flex-col px-4 pb-5 pt-4 sm:px-8 sm:pb-7 sm:pt-6">
-            {/* <div className="flex items-start gap-2 sm:gap-4">
-              <h1 className="flex-1 text-center text-4xl font-extrabold tracking-[0.2em] text-gray-700 sm:text-5xl rounded-2xl bg-white/80 px-4 py-2">
-                OVIN-TRACK
-              </h1>
-            </div> */}
+        <header className="relative isolate flex h-96 w-full overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/images/background.png')] bg-cover bg-center" />
+          <div className="relative mx-auto flex w-full items-center justify-center max-w-6xl flex-col px-4 pb-5 pt-4 sm:px-8 sm:pb-7 sm:pt-6">
+            <div className="flex items-center justify-center w-80 sm:w-100 rounded-xl">
+              <Image src="/images/logo.png" alt="Logo OVIN-TRACK" width={300} height={300} className="w-auto h-auto" />
+            </div>
+            <div className="hidden sm:flex items-center justify-center p-4 opacity-95">
+              <Image src="/images/parcours.png" alt="Parcours OVIN-TRACK" width={2840} height={400} className="w-auto h-auto" />
+            </div>
             <HeaderNav />
           </div>
         </header>

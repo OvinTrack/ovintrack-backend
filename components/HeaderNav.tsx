@@ -12,7 +12,7 @@ interface SessionResponse
     administrator?: boolean;
 }
 
-const baseButtonClassName = 'inline-flex w-full items-center justify-center gap-2 rounded-md border border-white/35 bg-white/50 px-4 py-2 text-sm font-semibold uppercase tracking-wider text-gray-900 transition hover:bg-white/75 sm:w-auto';
+const baseButtonClassName = 'inline-flex w-full items-center justify-center gap-2 rounded-md border border-white/35 bg-white/90 px-4 py-2 text-sm font-semibold uppercase tracking-wider text-gray-900 transition hover:bg-white/75 sm:w-auto';
 
 export default function HeaderNav()
 {
