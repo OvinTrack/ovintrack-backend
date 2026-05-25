@@ -29,6 +29,7 @@ export async function GET(
         const report = await traccarFetch<unknown>(path, {
             headers: { Accept: 'application/json' },
         });
+
         return NextResponse.json(report);
     }
     catch (error)

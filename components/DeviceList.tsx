@@ -7,6 +7,23 @@ import type { FullTraccarDevice, FullTraccarUser } from "@/types/traccar-types";
 import DeviceForm from "./DeviceForm";
 
 type View = "list" | "create" | "edit";
+type AlertPeriod = "1d" | "7d" | "30d";
+
+interface TraccarEventReportItem
+{
+  type?: string;
+  eventType?: string;
+  eventTime?: string;
+  deviceTime?: string;
+  serverTime?: string;
+  fixTime?: string;
+}
+
+interface AlertDetail
+{
+  date: string;
+  type: string;
+}
 
 export default function DeviceList()
 {
@@ -25,6 +42,10 @@ export default function DeviceList()
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [users, setUsers] = useState<FullTraccarUser[]>([]);
+  const [alertsByDeviceId, setAlertsByDeviceId] = useState<Record<number, string>>({});
+  const [alertDetailsByDeviceId, setAlertDetailsByDeviceId] = useState<Record<number, AlertDetail[]>>({});
+  const [alertPeriod, setAlertPeriod] = useState<AlertPeriod>("7d");
+  const [alertsPopupDevice, setAlertsPopupDevice] = useState<FullTraccarDevice | null>(null);
 
   const usersById = useMemo(() =>
   {
@@ -53,6 +74,156 @@ export default function DeviceList()
 
   const hasActiveFilters = Object.values(filters).some(v => v.trim() !== "");
 
+  const formatEventDate = (rawDate?: string): string =>
+  {
+    if (!rawDate)
+    {
+      return "Date inconnue";
+    }
+
+    const parsed = new Date(rawDate);
+
+    if (Number.isNaN(parsed.getTime()))
+    {
+      return rawDate;
+    }
+
+    return parsed.toLocaleString("fr-FR", {
+      dateStyle: "short",
+      timeStyle: "medium",
+    });
+  };
+
+  const fetchAlerts = useCallback(async (deviceList: FullTraccarDevice[]) =>
+  {
+    if (deviceList.length === 0)
+    {
+      setAlertsByDeviceId({});
+      setAlertDetailsByDeviceId({});
+      return;
+    }
+
+    const now = new Date();
+    const periodMsByValue: Record<AlertPeriod, number> = {
+      "1d": 24 * 60 * 60 * 1000,
+      "7d": 7 * 24 * 60 * 60 * 1000,
+      "30d": 30 * 24 * 60 * 60 * 1000,
+    };
+    const from = new Date(now.getTime() - periodMsByValue[alertPeriod]);
+    const fromIso = from.toISOString();
+    const toIso = now.toISOString();
+
+    setAlertsByDeviceId(Object.fromEntries(deviceList.map(device => [device.id, "..."])));
+
+    const results = await Promise.allSettled(
+      deviceList.map(async (device) =>
+      {
+        const params = new URLSearchParams({
+          deviceId: String(device.id),
+          from: fromIso,
+          to: toIso,
+        });
+        const response = await fetch(`/api/traccar/reports/events?${params.toString()}`, {
+          credentials: "include",
+        });
+
+        if (!response.ok)
+        {
+          throw new Error("Erreur lors du chargement des alertes");
+        }
+
+        const events = await response.json() as TraccarEventReportItem[];
+        const details: AlertDetail[] = events.map((event) =>
+        {
+          const dateRaw = event.eventTime ?? event.deviceTime ?? event.serverTime ?? event.fixTime;
+          const typeRaw = (event.eventType ?? event.type ?? "inconnu").trim();
+
+          return {
+            date: formatEventDate(dateRaw),
+            type: typeRaw || "inconnu",
+          };
+        });
+
+        return {
+          deviceId: device.id,
+          value: String(events.length),
+          details,
+        };
+      }),
+    );
+
+    setAlertsByDeviceId((prev) =>
+    {
+      const next = { ...prev };
+
+      results.forEach((result, index) =>
+      {
+        const deviceId = deviceList[index]?.id;
+
+        if (!deviceId)
+        {
+          return;
+        }
+
+        if (result.status === "fulfilled")
+        {
+          next[deviceId] = result.value.value;
+          return;
+        }
+
+        next[deviceId] = "N/A";
+      });
+
+      return next;
+    });
+
+    setAlertDetailsByDeviceId((prev) =>
+    {
+      const next = { ...prev };
+
+      results.forEach((result, index) =>
+      {
+        const deviceId = deviceList[index]?.id;
+
+        if (!deviceId)
+        {
+          return;
+        }
+
+        if (result.status === "fulfilled")
+        {
+          next[deviceId] = result.value.details;
+          return;
+        }
+
+        next[deviceId] = [];
+      });
+
+      return next;
+    });
+  }, [alertPeriod]);
+
+  const renderAlertsValue = (device: FullTraccarDevice) =>
+  {
+    const value = alertsByDeviceId[device.id] ?? "...";
+    const count = Number(value);
+
+    if (Number.isInteger(count) && count > 0)
+    {
+      return (
+        <button
+          type="button"
+          onClick={() => setAlertsPopupDevice(device)}
+          className="text-blue-600 underline hover:no-underline hover:cursor-pointer"
+          title={`Voir les ${count} alertes de ${device.name}`}>
+          {count}
+        </button>
+      );
+    }
+
+    return value;
+  };
+
   const filteredDevices = devices.filter(device =>
   {
     const ownerUser = getOwnerUser(device);
@@ -77,6 +248,7 @@ export default function DeviceList()
       match(String(device.id), "id") &&
       match(device.name, "name") &&
       match(device.uniqueId, "uniqueId") &&
+      match(alertsByDeviceId[device.id], "alertes") &&
       match(device.attributes?.DZId, "DZId") &&
       match(ownerUser?.attributes?.eleveurNumNational, "eleveurNumNational") &&
       match(ownerUser?.name, "eleveurNom") &&
@@ -136,6 +308,39 @@ export default function DeviceList()
   {
     queueMicrotask(() => { void fetchDevices(); });
   }, [fetchDevices]);
+
+  useEffect(() =>
+  {
+    if (devices.length === 0)
+    {
+      return;
+    }
+
+    queueMicrotask(() => { void fetchAlerts(devices); });
+  }, [alertPeriod, devices, fetchAlerts]);
+
+  useEffect(() =>
+  {
+    if (!alertsPopupDevice)
+    {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) =>
+    {
+      if (event.key === "Escape")
+      {
+        setAlertsPopupDevice(null);
+      }
+    };
+
+    globalThis.addEventListener("keydown", handleKeyDown);
+
+    return () =>
+    {
+      globalThis.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [alertsPopupDevice]);
 
   const showSuccess = (msg: string) =>
   {
@@ -213,6 +418,18 @@ export default function DeviceList()
       }
 
       setDevices(prev => prev.filter(d => d.id !== device.id));
+      setAlertsByDeviceId(prev =>
+      {
+        const next = { ...prev };
+        delete next[device.id];
+        return next;
+      });
+      setAlertDetailsByDeviceId(prev =>
+      {
+        const next = { ...prev };
+        delete next[device.id];
+        return next;
+      });
       showSuccess(`Appareil "${device.name}" supprimé.`);
     }
     catch (err: unknown)
@@ -315,7 +532,7 @@ export default function DeviceList()
 
     return (
       <div className="bg-white shadow-md rounded-2xl overflow-hidden">
-        <div className="md:hidden divide-y divide-gray-100">
+        <div className="lg:hidden divide-y divide-gray-100">
           <div className="p-4 border-b border-gray-200 bg-gray-50">
             <input
               type="text"
@@ -334,6 +551,7 @@ export default function DeviceList()
             if (!g) return true;
             const all = [
               String(device.id), device.name, device.uniqueId,
+              alertsByDeviceId[device.id] ?? "",
               ...Object.values(device.attributes ?? {}),
             ].join(" ").toLowerCase();
             return all.includes(g);
@@ -348,6 +566,7 @@ export default function DeviceList()
                     <p className="text-xs text-gray-400">ID: <span className="font-mono">{device.id}</span></p>
                     <p className="text-base font-semibold text-gray-900 mt-1 wrap-break-word">{device.name}</p>
                     <p className="text-sm text-gray-600 font-mono mt-1 break-all">{device.uniqueId}</p>
+                    <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Alertes :</span> {renderAlertsValue(device)}</p>
                     {device.attributes?.DZId && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">DZId :</span> {device.attributes.DZId}</p>}
                     {ownerUser?.attributes?.eleveurNumNational && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">N° éleveur :</span> {ownerUser.attributes.eleveurNumNational}</p>}
                     {ownerUser?.name && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Nom éleveur :</span> {ownerUser.name}</p>}
@@ -406,13 +625,14 @@ export default function DeviceList()
           })}
         </div>
 
-        <div className="hidden md:block overflow-x-auto">
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">ID</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Nom</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Identifiant unique</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Alertes</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">DZId</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">N° éleveur</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Nom éleveur</th>
@@ -431,6 +651,7 @@ export default function DeviceList()
                   ["id", "ID"],
                   ["name", "Nom"],
                   ["uniqueId", "Identifiant"],
+                  ["alertes", "Alertes"],
                   ["DZId", "DZId"],
                   ["eleveurNumNational", "N° éleveur"],
                   ["eleveurNom", "Nom éleveur"],
@@ -468,6 +689,7 @@ export default function DeviceList()
                     <td className="px-4 py-4 text-gray-400 font-mono">{device.id}</td>
                     <td className="px-4 py-4 font-medium text-gray-900">{device.name}</td>
                     <td className="px-4 py-4 text-gray-600 font-mono">{device.uniqueId}</td>
+                    <td className="px-4 py-4 text-gray-600">{renderAlertsValue(device)}</td>
                     <td className="px-4 py-4 text-gray-600">{device.attributes?.DZId ?? ""}</td>
                     <td className="px-4 py-4 text-gray-600">{ownerUser?.attributes?.eleveurNumNational ?? ""}</td>
                     <td className="px-4 py-4 text-gray-600">{ownerUser?.name ?? ""}</td>
@@ -537,11 +759,23 @@ export default function DeviceList()
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-semibold">Gestion des appareils</h1>
         </div>
-        <button
-          onClick={handleCreate}
-          className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition hover:cursor-pointer">
-          + Nouvel appareil
-        </button>
+        <div className="flex items-center gap-2">
+          <label htmlFor="alerts-period" className="text-sm text-black dark:text-white">Alertes sur</label>
+          <select
+            id="alerts-period"
+            value={alertPeriod}
+            onChange={e => setAlertPeriod(e.target.value as AlertPeriod)}
+            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <option value="1d">24 heures</option>
+            <option value="7d">7 jours</option>
+            <option value="30d">30 jours</option>
+          </select>
+          <button
+            onClick={handleCreate}
+            className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition hover:cursor-pointer">
+            + Nouvel appareil
+          </button>
+        </div>
       </div>
 
       {hasUserFilter && (
@@ -580,6 +814,51 @@ export default function DeviceList()
       )}
 
       {renderContent()}
+
+      {alertsPopupDevice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Fermer la popup des alertes"
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setAlertsPopupDevice(null)}
+          />
+
+          <dialog
+            open
+            aria-label={`Détail des alertes pour ${alertsPopupDevice.name}`}
+            className="relative z-10 w-full max-w-2xl rounded-2xl bg-white p-0 shadow-2xl"
+          >
+            <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Alertes de {alertsPopupDevice.name}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setAlertsPopupDevice(null)}
+                className="rounded-lg px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 hover:cursor-pointer"
+                aria-label="Fermer la popup des alertes">
+                Fermer
+              </button>
+            </div>
+
+            <div className="max-h-[60vh] overflow-y-auto px-5 py-4">
+              {(alertDetailsByDeviceId[alertsPopupDevice.id] ?? []).length === 0 ? (
+                <p className="text-sm text-gray-500">Aucune alerte disponible.</p>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {(alertDetailsByDeviceId[alertsPopupDevice.id] ?? []).map((alert, index) => (
+                    <div key={`${alertsPopupDevice.id}-${index}`} className="grid grid-cols-1 gap-1 py-2 text-sm text-gray-700 sm:grid-cols-[220px_1fr]">
+                      <span className="font-medium text-gray-900">{alert.date}</span>
+                      <span>{alert.type}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </dialog>
+        </div>
+      )}
     </div>
   );
 }
