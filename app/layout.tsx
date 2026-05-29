@@ -35,9 +35,9 @@ export default function RootLayout({
             <div className="flex items-center justify-center w-80 sm:w-100 rounded-xl">
               <Image src="/images/logo.png" alt="Logo OVIN-TRACK" width={300} height={300} className="w-auto h-auto" />
             </div>
-            <div className="hidden sm:flex items-center justify-center p-4 opacity-95">
+            {/* <div className="hidden sm:flex items-center justify-center p-4 opacity-95">
               <Image src="/images/parcours.png" alt="Parcours OVIN-TRACK" width={2840} height={400} className="w-auto h-auto" />
-            </div>
+            </div> */}
             <HeaderNav />
           </div>
         </header>
