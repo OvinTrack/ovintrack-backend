@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { LayerGroup, Map as LeafletMap, Path } from 'leaflet';
 import type { FullTraccarUser, Ovin, TraccarGeofence } from '@/types/traccar-types';
-import GeofenceDrawPanel from '@/components/GeofenceDrawPanel';
+import dynamic from 'next/dynamic';
+
+const GeofenceDrawPanel = dynamic(() => import('@/components/GeofenceDrawPanel'), { ssr: false });
 import GeofenceList from '@/components/GeofenceList';
 import { GEOFENCES_CHANGED_EVENT, SESSION_CHANGED_EVENT } from '@/lib/utils';
 import { fitBoundsToGeofences, wktToLeafletLayer } from '@/lib/geofence-wkt';
@@ -109,6 +111,7 @@ export default function GeofencesPage()
             }).addTo(mapInstance.current);
 
             setMap(mapInstance.current);
+            setTimeout(() => mapInstance.current?.invalidateSize(), 0);
         });
 
         return () =>
@@ -218,10 +221,12 @@ export default function GeofencesPage()
     }, [selectedGeofenceId]);
 
     return (
-        <main className="relative w-screen h-screen overflow-hidden">
-            <div ref={containerRef} className="w-full h-full" />
+        <>
             <GeofenceList geofences={geofences} users={users} isAdmin={isAdmin} selectedGeofenceId={selectedGeofenceId} onSelect={setSelectedGeofenceId} />
-            <GeofenceDrawPanel ref={drawPanelRef} map={map} />
-        </main>
+            <main className="relative w-screen overflow-hidden h-screen">
+                <div ref={containerRef} className="w-full h-full" />
+                <GeofenceDrawPanel ref={drawPanelRef} map={map} />
+            </main>
+        </>
     );
 }
