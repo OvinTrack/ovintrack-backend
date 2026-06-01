@@ -58,6 +58,30 @@ export async function POST(request: NextRequest)
             body: JSON.stringify(payload),
         });
 
+        if (geofence)
+        {
+            const allUsers = await traccarAdminFetch<FullTraccarUser[]>('/api/users') ?? [];
+            const adminIds = allUsers
+                .filter((u) => u.administrator && String(u.id) !== targetUserId)
+                .map((u) => u.id);
+
+            for (const adminId of adminIds)
+            {
+                try
+                {
+                    await linkUserToGeofence(adminId, geofence.id);
+                }
+                catch (permissionError)
+                {
+                    const { status, body: permBody } = getTraccarErrorPayload(permissionError);
+                    console.warn(
+                        `[traccar/geofences] Admin permission assign failed for userId=${adminId}, geofenceId=${geofence.id}, status=${status}`,
+                        permBody,
+                    );
+                }
+            }
+        }
+
         if (geofence && targetUserId)
         {
             try
