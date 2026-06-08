@@ -1,11 +1,113 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import type { FullTraccarDevice, FullTraccarUser, TraccarDevice, TraccarUser } from '@/types/traccar-types';
+import type { FullTraccarDevice, FullTraccarUser, TraccarDevice, TraccarGeofence, TraccarUser } from '@/types/traccar-types';
+import { linkDeviceToGeofence } from '@/lib/traccar-permissions';
 import { getTraccarErrorPayload, traccarAdminFetch, traccarFetch } from '@/lib/traccar-session';
 
 function isGenericTraccar400Message(message: string): boolean
 {
     return /^Traccar(?: admin)? request failed \(400\)$/i.test(message.trim());
+}
+
+function resolveOwnerUserId(attributes: Record<string, string> | undefined, fallbackUserId: number | undefined): number | undefined
+{
+    const ownerAttributeValue = attributes?.eleveurId?.trim();
+
+    if (ownerAttributeValue)
+    {
+        const ownerFromAttributes = Number(ownerAttributeValue);
+
+        if (Number.isInteger(ownerFromAttributes) && ownerFromAttributes > 0)
+        {
+            return ownerFromAttributes;
+        }
+    }
+
+    return fallbackUserId;
+}
+
+async function assignDevicePermissionsToCurrentUserAndAdmins(deviceId: number, currentUserId: number): Promise<void>
+{
+    const users = await traccarAdminFetch<FullTraccarUser[]>('/api/users') ?? [];
+    const adminIds = users
+        .filter((user) => user.administrator)
+        .map((user) => user.id);
+
+    const userIds = Array.from(new Set([currentUserId, ...adminIds]));
+
+    for (const userId of userIds)
+    {
+        try
+        {
+            await traccarAdminFetch('/api/permissions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId,
+                    deviceId,
+                }),
+            });
+        }
+        catch (permissionError)
+        {
+            const { status, body } = getTraccarErrorPayload(permissionError);
+            console.warn(
+                `[traccar/devices] Permission assign failed for userId=${userId}, deviceId=${deviceId}, status=${status}`,
+                body,
+            );
+        }
+    }
+}
+
+async function assignOwnerGeofencePermissions(deviceId: number, ownerUserId: number): Promise<void>
+{
+    const ownerGeofences = await traccarAdminFetch<TraccarGeofence[]>(`/api/geofences?userId=${ownerUserId}`) ?? [];
+
+    for (const geofence of ownerGeofences)
+    {
+        try
+        {
+            await linkDeviceToGeofence(deviceId, geofence.id);
+        }
+        catch (permissionError)
+        {
+            const { status, body: permBody } = getTraccarErrorPayload(permissionError);
+            console.warn(
+                `[traccar/devices] Geofence permission assign failed for ownerUserId=${ownerUserId}, deviceId=${deviceId}, geofenceId=${geofence.id}, status=${status}`,
+                permBody,
+            );
+        }
+    }
+}
+
+function getDeviceValidationError(name: string | undefined, uniqueId: string | undefined): string | undefined
+{
+    if (!name)
+    {
+        return 'Le champ "name" est requis';
+    }
+
+    if (!uniqueId)
+    {
+        return 'Le champ "uniqueId" est requis';
+    }
+
+    if (/\s/.test(uniqueId))
+    {
+        return 'Le champ "uniqueId" ne doit pas contenir d\'espaces.';
+    }
+
+    if (uniqueId.length > 128)
+    {
+        return 'Le champ "uniqueId" est trop long (128 caracteres max).';
+    }
+
+    if (name.length > 128)
+    {
+        return 'Le champ "name" est trop long (128 caracteres max).';
+    }
+
+    return undefined;
 }
 
 export async function GET(request: NextRequest)
@@ -59,39 +161,16 @@ export async function POST(request: NextRequest)
         const body = await request.json() as Partial<FullTraccarDevice>;
         const name = body.name?.trim();
         const uniqueId = body.uniqueId?.trim();
+        const validationError = getDeviceValidationError(name, uniqueId);
 
-        if (!name)
+        if (validationError)
         {
-            return NextResponse.json({ message: 'Le champ "name" est requis' }, { status: 400 });
+            return NextResponse.json({ message: validationError }, { status: 400 });
         }
 
-        if (!uniqueId)
+        if (!name || !uniqueId)
         {
-            return NextResponse.json({ message: 'Le champ "uniqueId" est requis' }, { status: 400 });
-        }
-
-        if (/\s/.test(uniqueId))
-        {
-            return NextResponse.json(
-                { message: 'Le champ "uniqueId" ne doit pas contenir d\'espaces.' },
-                { status: 400 },
-            );
-        }
-
-        if (uniqueId.length > 128)
-        {
-            return NextResponse.json(
-                { message: 'Le champ "uniqueId" est trop long (128 caracteres max).' },
-                { status: 400 },
-            );
-        }
-
-        if (name.length > 128)
-        {
-            return NextResponse.json(
-                { message: 'Le champ "name" est trop long (128 caracteres max).' },
-                { status: 400 },
-            );
+            return NextResponse.json({ message: 'Requete invalide.' }, { status: 400 });
         }
 
         const devices = await traccarAdminFetch<TraccarDevice[]>('/api/devices') ?? [];
@@ -132,40 +211,24 @@ export async function POST(request: NextRequest)
         {
             const currentUser = await traccarFetch<TraccarUser>('/api/session');
 
-            if (!currentUser?.id)
+            if (currentUser?.id)
+            {
+                await assignDevicePermissionsToCurrentUserAndAdmins(device.id, currentUser.id);
+            }
+            else
             {
                 console.warn('[traccar/devices] Permission skip: no current user id available');
-                return NextResponse.json(device, { status: 201 });
             }
 
-            const users = await traccarAdminFetch<FullTraccarUser[]>('/api/users') ?? [];
-            const adminIds = users
-                .filter((user) => user.administrator)
-                .map((user) => user.id);
+            const ownerUserId = resolveOwnerUserId(body.attributes, currentUser?.id);
 
-            const userIds = Array.from(new Set([currentUser.id, ...adminIds]));
-
-            for (const userId of userIds)
+            if (ownerUserId)
             {
-                try
-                {
-                    await traccarAdminFetch('/api/permissions', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            userId,
-                            deviceId: device.id,
-                        }),
-                    });
-                }
-                catch (permissionError)
-                {
-                    const { status, body } = getTraccarErrorPayload(permissionError);
-                    console.warn(
-                        `[traccar/devices] Permission assign failed for userId=${userId}, deviceId=${device.id}, status=${status}`,
-                        body,
-                    );
-                }
+                await assignOwnerGeofencePermissions(device.id, ownerUserId);
+            }
+            else
+            {
+                console.warn(`[traccar/devices] Geofence link skip: no owner user id available for deviceId=${device.id}`);
             }
         }
         catch (permissionSetupError)

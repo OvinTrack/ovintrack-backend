@@ -9,6 +9,18 @@ import DeviceForm from "./DeviceForm";
 type View = "list" | "create" | "edit";
 type AlertPeriod = "1d" | "7d" | "30d";
 
+const ALARM_LABELS_FR: Record<string, string> = {
+  general: "Alarme générale",
+  sos: "Alerte SOS",
+  vibration: "Vibration détectée",
+  overspeed: "Vitesse trop élevée",
+  lowpower: "Alimentation faible",
+  lowbattery: "Batterie faible",
+  geofenceenter: "Entrée dans la zone",
+  geofenceexit: "Sortie de la zone",
+  tampering: "Sabotage détecté",
+};
+
 interface TraccarEventReportItem
 {
   type?: string;
@@ -99,6 +111,29 @@ export default function DeviceList()
     });
   };
 
+  const formatAlarmLabel = (rawAlarmName?: string): string =>
+  {
+    const value = rawAlarmName?.trim() ?? "";
+
+    if (!value)
+    {
+      return "Alarme inconnue";
+    }
+
+    const normalized = value.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const mapped = ALARM_LABELS_FR[normalized];
+
+    if (mapped)
+    {
+      return mapped;
+    }
+
+    return value
+      .replace(/([a-z])([A-Z])/g, "$1 $2")
+      .replace(/[_-]+/g, " ")
+      .trim();
+  };
+
   const fetchAlerts = useCallback(async (deviceList: FullTraccarDevice[]) =>
   {
     if (deviceList.length === 0)
@@ -156,7 +191,7 @@ export default function DeviceList()
           return {
             date: formatEventDate(dateRaw),
             type: typeRaw || "inconnu",
-            alarmName: alarmNameRaw || "Alarme inconnue",
+            alarmName: formatAlarmLabel(alarmNameRaw),
           };
         });
 
