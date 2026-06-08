@@ -17,12 +17,17 @@ interface TraccarEventReportItem
   deviceTime?: string;
   serverTime?: string;
   fixTime?: string;
+  attributes?: {
+    alarm?: string;
+    name?: string;
+  };
 }
 
 interface AlertDetail
 {
   date: string;
   type: string;
+  alarmName: string;
 }
 
 export default function DeviceList()
@@ -109,6 +114,7 @@ export default function DeviceList()
       "7d": 7 * 24 * 60 * 60 * 1000,
       "30d": 30 * 24 * 60 * 60 * 1000,
     };
+    
     const from = new Date(now.getTime() - periodMsByValue[alertPeriod]);
     const fromIso = from.toISOString();
     const toIso = now.toISOString();
@@ -122,7 +128,9 @@ export default function DeviceList()
           deviceId: String(device.id),
           from: fromIso,
           to: toIso,
+          type: "alarm",
         });
+
         const response = await fetch(`/api/traccar/reports/events?${params.toString()}`, {
           credentials: "include",
         });
@@ -133,20 +141,28 @@ export default function DeviceList()
         }
 
         const events = await response.json() as TraccarEventReportItem[];
-        const details: AlertDetail[] = events.map((event) =>
+        const alarmEvents = events.filter((event) =>
+        {
+          const rawType = (event.eventType ?? event.type ?? "").trim().toLowerCase();
+          return rawType === "alarm" || rawType === "alarme";
+        });
+
+        const details: AlertDetail[] = alarmEvents.map((event) =>
         {
           const dateRaw = event.eventTime ?? event.deviceTime ?? event.serverTime ?? event.fixTime;
           const typeRaw = (event.eventType ?? event.type ?? "inconnu").trim();
+          const alarmNameRaw = (event.attributes?.alarm ?? event.attributes?.name ?? "").trim();
 
           return {
             date: formatEventDate(dateRaw),
             type: typeRaw || "inconnu",
+            alarmName: alarmNameRaw || "Alarme inconnue",
           };
         });
 
         return {
           deviceId: device.id,
-          value: String(events.length),
+          value: String(alarmEvents.length),
           details,
         };
       }),
@@ -850,7 +866,9 @@ export default function DeviceList()
                   {(alertDetailsByDeviceId[alertsPopupDevice.id] ?? []).map((alert, index) => (
                     <div key={`${alertsPopupDevice.id}-${index}`} className="grid grid-cols-1 gap-1 py-2 text-sm text-gray-700 sm:grid-cols-[220px_1fr]">
                       <span className="font-medium text-gray-900">{alert.date}</span>
-                      <span>{alert.type}</span>
+                      <div className="flex flex-col">
+                        <span>{alert.alarmName}</span>
+                      </div>
                     </div>
                   ))}
                 </div>
