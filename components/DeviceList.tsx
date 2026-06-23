@@ -7,7 +7,7 @@ import type { FullTraccarDevice, FullTraccarUser } from "@/types/traccar-types";
 import DeviceForm from "./DeviceForm";
 
 type View = "list" | "create" | "edit";
-type AlertPeriod = "1d" | "7d" | "30d";
+type AlertPeriod = "1d" | "7d" | "30d" | "60d";
 
 const ALARM_LABELS_FR: Record<string, string> = {
   general: "Alarme générale",
@@ -148,6 +148,7 @@ export default function DeviceList()
       "1d": 24 * 60 * 60 * 1000,
       "7d": 7 * 24 * 60 * 60 * 1000,
       "30d": 30 * 24 * 60 * 60 * 1000,
+      "60d": 60 * 24 * 60 * 60 * 1000,
     };
     
     const from = new Date(now.getTime() - periodMsByValue[alertPeriod]);
@@ -163,8 +164,9 @@ export default function DeviceList()
           deviceId: String(device.id),
           from: fromIso,
           to: toIso,
-          type: "alarm",
         });
+        params.append("type", "alarm");
+        params.append("type", "geofenceExit");
 
         const response = await fetch(`/api/traccar/reports/events?${params.toString()}`, {
           credentials: "include",
@@ -176,17 +178,19 @@ export default function DeviceList()
         }
 
         const events = await response.json() as TraccarEventReportItem[];
+
         const alarmEvents = events.filter((event) =>
         {
           const rawType = (event.eventType ?? event.type ?? "").trim().toLowerCase();
-          return rawType === "alarm" || rawType === "alarme";
+          return rawType === "alarm" || rawType === "alarme" || rawType === "geofenceexit";
         });
 
         const details: AlertDetail[] = alarmEvents.map((event) =>
         {
           const dateRaw = event.eventTime ?? event.deviceTime ?? event.serverTime ?? event.fixTime;
           const typeRaw = (event.eventType ?? event.type ?? "inconnu").trim();
-          const alarmNameRaw = (event.attributes?.alarm ?? event.attributes?.name ?? "").trim();
+          const isGeofenceExit = typeRaw.toLowerCase() === "geofenceexit";
+          const alarmNameRaw = (event.attributes?.alarm ?? event.attributes?.name ?? (isGeofenceExit ? "geofenceexit" : "")).trim();
 
           return {
             date: formatEventDate(dateRaw),
@@ -435,8 +439,8 @@ export default function DeviceList()
     setSelectedDevice(undefined);
     await fetchDevices();
     showSuccess(isEditing
-      ? `Appareil "${savedDevice.name}" mis à jour avec succès.`
-      : `Appareil "${savedDevice.name}" créé avec succès.`
+      ? `Ovin "${savedDevice.name}" mis à jour avec succès.`
+      : `Ovin "${savedDevice.name}" créé avec succès.`
     );
   };
 
@@ -448,7 +452,7 @@ export default function DeviceList()
 
   const handleDelete = async (device: FullTraccarDevice) =>
   {
-    if (!confirm(`Supprimer l'appareil "${device.name}" (ID: ${device.id}) ? Cette action est irréversible.`))
+    if (!confirm(`Supprimer l'ovin "${device.name}" (ID: ${device.id}) ? Cette action est irréversible.`))
     {
       return;
     }
@@ -481,7 +485,7 @@ export default function DeviceList()
         delete next[device.id];
         return next;
       });
-      showSuccess(`Appareil "${device.name}" supprimé.`);
+      showSuccess(`Ovin "${device.name}" supprimé.`);
     }
     catch (err: unknown)
     {
@@ -574,7 +578,7 @@ export default function DeviceList()
     {
       return (
         <div className="text-center py-12 text-gray-400 bg-white rounded-2xl shadow">
-          Aucun appareil trouvé.&nbsp;<button onClick={handleCreate} className="ml-2 text-blue-600 underline hover:no-underline hover:cursor-pointer">
+          Aucun ovin trouvé.&nbsp;<button onClick={handleCreate} className="ml-2 text-blue-600 underline hover:no-underline hover:cursor-pointer">
             Créer le premier
           </button>
         </div>
@@ -808,7 +812,7 @@ export default function DeviceList()
     <div className="max-w-full mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-semibold">Gestion des appareils</h1>
+          <h1 className="text-2xl font-semibold">Gestion des ovins</h1>
         </div>
         <div className="flex items-center gap-2">
           <label htmlFor="alerts-period" className="text-sm text-black dark:text-white">Alertes sur</label>
@@ -824,7 +828,7 @@ export default function DeviceList()
           <button
             onClick={handleCreate}
             className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition hover:cursor-pointer">
-            + Nouvel appareil
+            + Nouvel ovin
           </button>
         </div>
       </div>

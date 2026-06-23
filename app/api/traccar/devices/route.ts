@@ -80,31 +80,48 @@ async function assignOwnerGeofencePermissions(deviceId: number, ownerUserId: num
     }
 }
 
-function getDeviceValidationError(name: string | undefined, uniqueId: string | undefined): string | undefined
+function getDeviceValidationError(name: string | undefined, uniqueId: string | undefined, birthDate: string | undefined): string | undefined
 {
     if (!name)
     {
-        return 'Le champ "name" est requis';
+        return 'Le champ "Nom" est requis';
     }
 
     if (!uniqueId)
     {
-        return 'Le champ "uniqueId" est requis';
+        return 'Le champ "Identifiant unique" est requis';
     }
 
     if (/\s/.test(uniqueId))
     {
-        return 'Le champ "uniqueId" ne doit pas contenir d\'espaces.';
+        return 'Le champ "Identifiant unique" ne doit pas contenir d\'espaces.';
     }
 
     if (uniqueId.length > 128)
     {
-        return 'Le champ "uniqueId" est trop long (128 caracteres max).';
+        return 'Le champ "Identifiant unique" est trop long (128 caracteres max).';
     }
 
     if (name.length > 128)
     {
-        return 'Le champ "name" est trop long (128 caracteres max).';
+        return 'Le champ "Nom" est trop long (128 caracteres max).';
+    }
+
+    if (birthDate && !/^\d{4}-\d{2}-\d{2}$/.test(birthDate))
+    {
+        return 'Le champ "Date de naissance" doit avoir le format AAAA-MM-JJ.';
+    }
+
+    const birthDateObj = birthDate ? new Date(birthDate) : null;
+
+    if (birthDateObj && Number.isNaN(birthDateObj.getTime()))
+    {
+        return 'Le champ "Date de naissance" doit avoir le format AAAA-MM-JJ.';
+    }
+
+    if (birthDateObj && birthDateObj > new Date())
+    {
+        return 'Le champ "Date de naissance" ne doit pas etre dans le futur.';
     }
 
     return undefined;
@@ -161,7 +178,8 @@ export async function POST(request: NextRequest)
         const body = await request.json() as Partial<FullTraccarDevice>;
         const name = body.name?.trim();
         const uniqueId = body.uniqueId?.trim();
-        const validationError = getDeviceValidationError(name, uniqueId);
+        const birthDate = body.attributes?.dateNaissance?.trim();
+        const validationError = getDeviceValidationError(name, uniqueId, birthDate );
 
         if (validationError)
         {

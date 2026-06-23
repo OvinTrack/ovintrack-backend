@@ -209,7 +209,7 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
 
     if (duplicateDevice)
     {
-      return "Un appareil existe deja avec cet identifiant unique.";
+      return "Un ovin existe deja avec cet identifiant unique.";
     }
 
     return null;
@@ -351,7 +351,7 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
   return (
     <div className="max-w-lg mx-auto p-8 bg-white shadow-2xl rounded-2xl">
       <h2 className="text-2xl font-semibold mb-8 text-center text-gray-700">
-        {isEditing ? "Modifier l'appareil" : "Créer un appareil"}
+        {isEditing ? "Modifier l'ovin" : "Créer un ovin"}
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -361,7 +361,7 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
             id="name"
             className={input}
             name="name"
-            placeholder="Nom de l'appareil"
+            placeholder="Nom de l'ovin"
             value={formData.name}
             onChange={handleChange}
             required />
