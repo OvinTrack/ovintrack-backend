@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { FullTraccarUser, TraccarGeofence } from '@/types/traccar-types';
 import { GEOFENCES_CHANGED_EVENT } from '@/lib/utils';
 
@@ -15,10 +16,11 @@ interface GeofenceListProps
 
 const DeleteButton = ({ onClick, disabled, label }: { onClick: () => void; disabled: boolean; label: string }) => (
     <button
+        type="button"
         onClick={onClick}
         disabled={disabled}
         aria-label={label}
-        title="Supprimer"
+        title={label}
         className="shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg p-1 transition disabled:opacity-50 cursor-pointer">
         {disabled
             ? <span className="w-4 h-4 flex items-center justify-center text-xs">…</span>
@@ -36,6 +38,7 @@ const DeleteButton = ({ onClick, disabled, label }: { onClick: () => void; disab
 
 export default function GeofenceList({ geofences, users, isAdmin, selectedGeofenceId, onSelect }: Readonly<GeofenceListProps>)
 {
+    const t = useTranslations('geofences');
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [error, setError] = useState('');
     const [pos, setPos] = useState({ x: 16, y: 304 });
@@ -55,7 +58,7 @@ export default function GeofenceList({ geofences, users, isAdmin, selectedGeofen
 
     const handleDelete = async (geofence: TraccarGeofence) =>
     {
-        if (!confirm(`Supprimer le périmètre "${geofence.name}" ? Cette action est irréversible.`)) return;
+        if (!confirm(t('deleteConfirm', { name: geofence.name }))) return;
 
         setDeletingId(geofence.id);
         setError('');
@@ -67,14 +70,14 @@ export default function GeofenceList({ geofences, users, isAdmin, selectedGeofen
             if (!response.ok)
             {
                 const data = await response.json() as { message?: string };
-                throw new Error(data.message ?? 'Erreur lors de la suppression');
+                throw new Error(data.message ?? t('errors.delete'));
             }
 
             globalThis.dispatchEvent(new Event(GEOFENCES_CHANGED_EVENT));
         }
         catch (err)
         {
-            setError(err instanceof Error ? err.message : 'Erreur inconnue');
+            setError(err instanceof Error ? err.message : t('errors.unknown'));
         }
         finally
         {
@@ -104,7 +107,7 @@ export default function GeofenceList({ geofences, users, isAdmin, selectedGeofen
 
     return (
         <>
-            {/* Portrait : barre pleine largeur dans le flux, collée au header */}
+            {/* Portrait: full-width bar */}
             <div className="landscape:hidden w-full h-[25vh] bg-white border-b border-gray-200 shadow-sm overflow-y-auto">
                 {error && <p className="text-xs text-red-500 px-4 py-2">{error}</p>}
                 {geofences.map((geofence) => (
@@ -113,6 +116,7 @@ export default function GeofenceList({ geofences, users, isAdmin, selectedGeofen
                         ref={(el) => { if (el) portraitItemRefs.current.set(geofence.id, el); else portraitItemRefs.current.delete(geofence.id); }}
                         className={`flex items-center justify-between px-4 py-2 border-b border-gray-100 transition ${selectedGeofenceId === geofence.id ? 'bg-blue-50' : ''}`}>
                         <button
+                            type="button"
                             onClick={() => onSelect(selectedGeofenceId === geofence.id ? null : geofence.id)}
                             className="flex-1 min-w-0 flex flex-col text-left cursor-pointer">
                             <span className="text-sm text-gray-700 truncate">{geofence.name}</span>
@@ -126,15 +130,15 @@ export default function GeofenceList({ geofences, users, isAdmin, selectedGeofen
                             <DeleteButton
                                 onClick={() => void handleDelete(geofence)}
                                 disabled={deletingId === geofence.id}
-                                label={`Supprimer ${geofence.name}`} />
+                                label={t('deleteLabel', { name: geofence.name })} />
                         )}
                     </div>
                 ))}
             </div>
 
-            {/* Paysage : panneau flottant draggable */}
+            {/* Landscape: floating draggable panel */}
             <div
-                className="portrait:hidden fixed z-[1000] w-56 rounded-2xl border border-gray-200 bg-white shadow-md p-3 space-y-1 max-h-[calc(100vh-20rem)] overflow-y-auto"
+                className="portrait:hidden fixed z-1000 w-56 rounded-2xl border border-gray-200 bg-white shadow-md p-3 space-y-1 max-h-[calc(100vh-20rem)] overflow-y-auto"
                 style={{ left: pos.x, top: pos.y }}>
                 <div
                     className="flex items-center gap-2 pb-2 border-b border-gray-200 cursor-grab active:cursor-grabbing select-none"
@@ -149,7 +153,7 @@ export default function GeofenceList({ geofences, users, isAdmin, selectedGeofen
                         <circle cx="9" cy="19" r="1" fill="currentColor" stroke="none" />
                         <circle cx="15" cy="19" r="1" fill="currentColor" stroke="none" />
                     </svg>
-                    <p className="text-sm font-semibold text-gray-600">Périmètres</p>
+                    <p className="text-sm font-semibold text-gray-600">{t('title')}</p>
                 </div>
 
                 {error && <p className="text-xs text-red-500 py-1">{error}</p>}
@@ -160,6 +164,7 @@ export default function GeofenceList({ geofences, users, isAdmin, selectedGeofen
                         ref={(el) => { if (el) landscapeItemRefs.current.set(geofence.id, el); else landscapeItemRefs.current.delete(geofence.id); }}
                         className={`flex items-center justify-between gap-2 py-1 px-1 rounded-lg transition ${selectedGeofenceId === geofence.id ? 'bg-blue-100' : 'hover:bg-gray-50'}`}>
                         <button
+                            type="button"
                             onClick={() => onSelect(selectedGeofenceId === geofence.id ? null : geofence.id)}
                             className="flex-1 min-w-0 flex flex-col text-left cursor-pointer">
                             <span className="text-sm text-gray-700 truncate" title={geofence.name}>
@@ -174,7 +179,7 @@ export default function GeofenceList({ geofences, users, isAdmin, selectedGeofen
                         <DeleteButton
                             onClick={() => void handleDelete(geofence)}
                             disabled={deletingId === geofence.id}
-                            label={`Supprimer ${geofence.name}`} />
+                            label={t('deleteLabel', { name: geofence.name })} />
                     </div>
                 ))}
             </div>

@@ -2,6 +2,7 @@
 
 import { forwardRef, useEffect, useRef, useState } from 'react';
 import type { LatLng, Map as LeafletMap } from 'leaflet';
+import { useTranslations } from 'next-intl';
 import { useLeafletDraw } from '@/hooks/useLeafletDraw';
 import { leafletLayerToWkt } from '@/lib/geofence-wkt';
 import type { ApiError, TraccarUser } from '@/types/traccar-types';
@@ -14,8 +15,28 @@ interface GeofenceDrawPanelProps
 
 type Step = 'idle' | 'drawing' | 'form';
 
+function RadiusInput({ radius, label }: Readonly<{ radius: number | null; label: string }>)
+{
+    let display = '—';
+    if (radius !== null)
+    {
+        display = radius >= 1000 ? `${(radius / 1000).toFixed(2)} km` : `${radius} m`;
+    }
+    return (
+        <div>
+            <label htmlFor="gf-radius" className="text-xs text-gray-400">{label}</label>
+            <input
+                id="gf-radius"
+                readOnly
+                value={display}
+                className="w-full rounded border px-2 py-1 text-sm font-mono bg-gray-50 text-gray-700" />
+        </div>
+    );
+}
+
 const GeofenceDrawPanel = forwardRef<HTMLDivElement, GeofenceDrawPanelProps>(function GeofenceDrawPanel({ map }, ref)
 {
+    const t = useTranslations('geofenceForm');
     const { startDrawing, cancelDrawing, drawnLayer, clearDrawnLayer } = useLeafletDraw(map);
 
     const [step, setStep] = useState<Step>('idle');
@@ -113,7 +134,7 @@ const GeofenceDrawPanel = forwardRef<HTMLDivElement, GeofenceDrawPanelProps>(fun
 
         if (!name.trim())
         {
-            setMessage('Le nom est requis.');
+            setMessage(t('errors.nameRequired'));
             return;
         }
 
@@ -125,7 +146,7 @@ const GeofenceDrawPanel = forwardRef<HTMLDivElement, GeofenceDrawPanelProps>(fun
         }
         catch (error)
         {
-            setMessage(error instanceof Error ? error.message : 'Erreur de conversion WKT.');
+            setMessage(error instanceof Error ? error.message : t('errors.wktError'));
             return;
         }
 
@@ -148,10 +169,10 @@ const GeofenceDrawPanel = forwardRef<HTMLDivElement, GeofenceDrawPanelProps>(fun
             if (!response.ok)
             {
                 const error = await response.json() as ApiError;
-                throw new Error(error.message ?? 'Erreur lors de la création.');
+                throw new Error(error.message ?? t('errors.createError'));
             }
 
-            setMessage('Périmètre créé !');
+            setMessage(t('created'));
             globalThis.dispatchEvent(new Event(GEOFENCES_CHANGED_EVENT));
             clearDrawnLayer();
             setStep('idle');
@@ -161,7 +182,7 @@ const GeofenceDrawPanel = forwardRef<HTMLDivElement, GeofenceDrawPanelProps>(fun
         }
         catch (error)
         {
-            setMessage(error instanceof Error ? error.message : 'Erreur inattendue.');
+            setMessage(error instanceof Error ? error.message : t('errors.unexpected'));
         }
         finally
         {
@@ -169,25 +190,33 @@ const GeofenceDrawPanel = forwardRef<HTMLDivElement, GeofenceDrawPanelProps>(fun
         }
     };
 
+    let drawingInstruction = t('drawing.polygon');
+    if (drawMode === 'circle')
+    {
+        drawingInstruction = centerLocked ? t('drawing.circleRadius') : t('drawing.circleCenter');
+    }
+
     return (
-        <div ref={ref} className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[1000] w-[min(24rem,calc(100vw-2rem))] rounded-2xl border border-gray-200 bg-white shadow-md p-4 space-y-3">
+        <div ref={ref} className="fixed bottom-6 left-1/2 -translate-x-1/2 z-1000 w-[min(24rem,calc(100vw-2rem))] rounded-2xl border border-gray-200 bg-white shadow-md p-4 space-y-3">
 
             {step === 'idle' && (
                 <>
-                    <p className="text-sm font-semibold text-gray-600">Nouveau périmètre</p>
+                    <p className="text-sm font-semibold text-gray-600">{t('newPerimeter')}</p>
 
                     <div className="flex gap-2">
                         <button
+                            type="button"
                             className={`flex-1 rounded border px-3 py-2 text-sm cursor-pointer ${drawMode === 'circle' ? 'bg-gray-900 text-white' : 'hover:bg-gray-100'}`}
                             onClick={() => { setDrawMode('circle'); handleStartDrawingMode('circle'); }}
                             disabled={!map}>
-                            Cercle
+                            {t('circle')}
                         </button>
                         <button
+                            type="button"
                             className={`flex-1 rounded border px-3 py-2 text-sm cursor-pointer ${drawMode === 'polygon' ? 'bg-gray-900 text-white' : 'hover:bg-gray-100'}`}
                             onClick={() => { setDrawMode('polygon'); handleStartDrawingMode('polygon'); }}
                             disabled={!map}>
-                            Polygone
+                            {t('polygon')}
                         </button>
                     </div>
 
@@ -197,27 +226,23 @@ const GeofenceDrawPanel = forwardRef<HTMLDivElement, GeofenceDrawPanelProps>(fun
 
             {step === 'drawing' && (
                 <>
-                    <p className="text-sm text-gray-600">
-                        {drawMode === 'circle'
-                            ? centerLocked
-                                ? 'Définir le rayon.'
-                                : 'Déplacer puis cliquer pour placer le centre du cercle.'
-                            : 'Cliquez pour ajouter des points. Double-cliquez pour terminer.'}
-                    </p>
+                    <p className="text-sm text-gray-600">{drawingInstruction}</p>
 
                     {drawMode === 'circle' && (
                         <>
                             <div className="flex gap-2">
                                 <div className="flex-1">
-                                    <label className="text-xs text-gray-400">Latitude du centre</label>
+                                    <label htmlFor="gf-lat" className="text-xs text-gray-400">{t('latCenter')}</label>
                                     <input
+                                        id="gf-lat"
                                         readOnly
                                         value={mousePos ? mousePos.lat.toFixed(6) : '—'}
                                         className="w-full rounded border px-2 py-1 text-sm font-mono bg-gray-50 text-gray-700" />
                                 </div>
                                 <div className="flex-1">
-                                    <label className="text-xs text-gray-400">Longitude du centre</label>
+                                    <label htmlFor="gf-lng" className="text-xs text-gray-400">{t('lngCenter')}</label>
                                     <input
+                                        id="gf-lng"
                                         readOnly
                                         value={mousePos ? mousePos.lng.toFixed(6) : '—'}
                                         className="w-full rounded border px-2 py-1 text-sm font-mono bg-gray-50 text-gray-700" />
@@ -225,52 +250,44 @@ const GeofenceDrawPanel = forwardRef<HTMLDivElement, GeofenceDrawPanelProps>(fun
                             </div>
 
                             {centerLocked && (
-                                <div>
-                                    <label className="text-xs text-gray-400">Rayon</label>
-                                    <input
-                                        readOnly
-                                        value={radius !== null
-                                            ? radius >= 1000
-                                                ? `${(radius / 1000).toFixed(2)} km`
-                                                : `${radius} m`
-                                            : '—'}
-                                        className="w-full rounded border px-2 py-1 text-sm font-mono bg-gray-50 text-gray-700" />
-                                </div>
+                                <RadiusInput radius={radius} label={t('radius')} />
                             )}
                         </>
                     )}
 
                     <button
+                        type="button"
                         className="w-full rounded border px-3 py-2 text-sm cursor-pointer hover:bg-gray-100"
                         onClick={handleCancel}>
-                        Annuler
+                        {t('cancel')}
                     </button>
                 </>
             )}
 
             {step === 'form' && (
                 <>
-                    <p className="text-sm font-semibold text-gray-600">Nommer le périmètre</p>
+                    <p className="text-sm font-semibold text-gray-600">{t('namePerimeter')}</p>
 
                     <input
                         className="w-full rounded border p-2 text-sm"
                         type="text"
-                        placeholder="Nom *"
+                        placeholder={t('namePlaceholder')}
                         value={name}
                         onChange={(e) => setName(e.target.value)} />
 
                     <input
                         className="w-full rounded border p-2 text-sm"
                         type="text"
-                        placeholder="Description (optionnel)"
+                        placeholder={t('descriptionPlaceholder')}
                         value={description}
                         onChange={(e) => setDescription(e.target.value)} />
 
                     <select
                         className="w-full rounded border p-2 text-sm bg-white text-gray-700"
+                        title={t('noUser')}
                         value={selectedUserId}
                         onChange={(e) => setSelectedUserId(e.target.value)}>
-                        <option value="">— Aucun utilisateur —</option>
+                        <option value="">{t('noUser')}</option>
                         {users.map((u) => (
                             <option key={u.id} value={String(u.id)}>{u.name}</option>
                         ))}
@@ -280,16 +297,18 @@ const GeofenceDrawPanel = forwardRef<HTMLDivElement, GeofenceDrawPanelProps>(fun
 
                     <div className="flex gap-2">
                         <button
+                            type="button"
                             className="flex-1 rounded border px-3 py-2 text-sm cursor-pointer hover:bg-gray-100"
                             onClick={handleCancel}
                             disabled={loading}>
-                            Annuler
+                            {t('cancel')}
                         </button>
                         <button
+                            type="button"
                             className="flex-1 rounded border px-3 py-2 text-sm cursor-pointer bg-blue-600 text-white disabled:opacity-50"
                             onClick={handleSubmit}
                             disabled={loading}>
-                            {loading ? 'Enregistrement...' : 'Enregistrer'}
+                            {loading ? t('saving') : t('save')}
                         </button>
                     </div>
                 </>

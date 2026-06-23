@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useTranslations, useLocale } from 'next-intl';
+import { Link, useRouter, usePathname } from '@/i18n/navigation';
 import type { ApiError } from '@/types/traccar-types';
 import { SESSION_CHANGED_EVENT } from '@/lib/utils';
 
@@ -16,7 +16,10 @@ const baseButtonClassName = 'inline-flex w-full items-center justify-center gap-
 
 export default function HeaderNav()
 {
+    const t = useTranslations('nav');
+    const locale = useLocale();
     const router = useRouter();
+    const pathname = usePathname();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
@@ -127,6 +130,12 @@ export default function HeaderNav()
         }
     };
 
+    const switchLocale = () =>
+    {
+        const nextLocale = locale === 'fr' ? 'ar' : 'fr';
+        router.replace(pathname, { locale: nextLocale });
+    };
+
     return (
         <nav className="mt-auto w-full" aria-label="Navigation principale">
             {!isLoggedIn && (
@@ -140,7 +149,7 @@ export default function HeaderNav()
                     <input
                         className="w-full rounded border border-white/45 bg-white/90 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/70"
                         type="email"
-                        placeholder="Email"
+                        placeholder={t('emailPlaceholder')}
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
                         required />
@@ -148,7 +157,7 @@ export default function HeaderNav()
                     <input
                         className="w-full rounded border border-white/45 bg-white/90 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/70"
                         type="password"
-                        placeholder="Mot de passe"
+                        placeholder={t('passwordPlaceholder')}
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
                         required />
@@ -163,7 +172,7 @@ export default function HeaderNav()
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                     </svg>
-                                    Chargement...
+                                    {t('loading')}
                                 </>
                             )
                             : (
@@ -171,9 +180,16 @@ export default function HeaderNav()
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25m0 0a3 3 0 10-6 0V9m6-3.75H18A2.25 2.25 0 0120.25 7.5v9A2.25 2.25 0 0118 18.75H6A2.25 2.25 0 013.75 16.5v-9A2.25 2.25 0 016 5.25h3.75" />
                                     </svg>
-                                    Login
+                                    {t('login')}
                                 </>
                             )}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={switchLocale}
+                        className="inline-flex items-center justify-center rounded-md border border-white/35 bg-white/90 px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-white/75 sm:w-auto">
+                        {t('switchLang')}
                     </button>
 
                     {message && (
@@ -193,8 +209,7 @@ export default function HeaderNav()
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-6 w-6">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z" />
                             </svg>
-
-                            Carte
+                            {t('map')}
                         </Link>
                     </li>
                     {isAdmin && (
@@ -205,8 +220,7 @@ export default function HeaderNav()
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-6 w-6">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
                                 </svg>
-
-                                Utilisateurs
+                                {t('users')}
                             </Link>
                         </li>
                     )}
@@ -218,8 +232,7 @@ export default function HeaderNav()
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
                             </svg>
-
-                            Ovins
+                            {t('ovins')}
                         </Link>
                     </li>
                     {isAdmin && (
@@ -230,8 +243,7 @@ export default function HeaderNav()
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-6 w-6">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 0 0-3.7-3.7 48.678 48.678 0 0 0-7.324 0 4.006 4.006 0 0 0-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 0 0 3.7 3.7 48.656 48.656 0 0 0 7.324 0 4.006 4.006 0 0 0 3.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3-3 3" />
                                 </svg>
-
-                                Perimetres
+                                {t('perimeters')}
                             </Link>
                         </li>
                     )}
@@ -244,7 +256,15 @@ export default function HeaderNav()
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-6 w-6">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 1 1 9 0v3.75M3.75 21.75h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H3.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
                             </svg>
-                            Deconnexion
+                            {t('logout')}
+                        </button>
+                    </li>
+                    <li className="col-span-2 w-full sm:w-auto flex justify-center">
+                        <button
+                            type="button"
+                            onClick={switchLocale}
+                            className="text-xs text-white/80 hover:text-white underline hover:no-underline cursor-pointer">
+                            {t('switchLang')}
                         </button>
                     </li>
                 </ul>

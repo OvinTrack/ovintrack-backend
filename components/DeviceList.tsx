@@ -1,25 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
+import { Link, useRouter } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
 import type { FullTraccarDevice, FullTraccarUser } from "@/types/traccar-types";
 import DeviceForm from "./DeviceForm";
 
 type View = "list" | "create" | "edit";
 type AlertPeriod = "1d" | "7d" | "30d" | "60d";
-
-const ALARM_LABELS_FR: Record<string, string> = {
-  general: "Alarme générale",
-  sos: "Alerte SOS",
-  vibration: "Vibration détectée",
-  overspeed: "Vitesse trop élevée",
-  lowpower: "Alimentation faible",
-  lowbattery: "Batterie faible",
-  geofenceenter: "Entrée dans la zone",
-  geofenceexit: "Sortie de la zone",
-  tampering: "Sabotage détecté",
-};
 
 interface TraccarEventReportItem
 {
@@ -44,6 +33,8 @@ interface AlertDetail
 
 export default function DeviceList()
 {
+  const t = useTranslations('devices');
+  const locale = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedUserId = searchParams.get("userId")?.trim() ?? "";
@@ -91,11 +82,13 @@ export default function DeviceList()
 
   const hasActiveFilters = Object.values(filters).some(v => v.trim() !== "");
 
+  const dateLocale = locale === 'ar' ? 'ar-DZ' : 'fr-FR';
+
   const formatEventDate = (rawDate?: string): string =>
   {
     if (!rawDate)
     {
-      return "Date inconnue";
+      return t('alarms.unknownDate');
     }
 
     const parsed = new Date(rawDate);
@@ -105,7 +98,7 @@ export default function DeviceList()
       return rawDate;
     }
 
-    return parsed.toLocaleString("fr-FR", {
+    return parsed.toLocaleString(dateLocale, {
       dateStyle: "short",
       timeStyle: "medium",
     });
@@ -117,15 +110,25 @@ export default function DeviceList()
 
     if (!value)
     {
-      return "Alarme inconnue";
+      return t('alarms.unknown');
     }
 
     const normalized = value.toLowerCase().replace(/[^a-z0-9]/g, "");
-    const mapped = ALARM_LABELS_FR[normalized];
+    const alarmKeys: Record<string, keyof { general: string; sos: string; vibration: string; overspeed: string; lowpower: string; lowbattery: string; geofenceenter: string; geofenceexit: string; tampering: string }> = {
+      general: "general",
+      sos: "sos",
+      vibration: "vibration",
+      overspeed: "overspeed",
+      lowpower: "lowpower",
+      lowbattery: "lowbattery",
+      geofenceenter: "geofenceenter",
+      geofenceexit: "geofenceexit",
+      tampering: "tampering",
+    };
 
-    if (mapped)
+    if (normalized in alarmKeys)
     {
-      return mapped;
+      return t(`alarms.${normalized}` as Parameters<typeof t>[0]);
     }
 
     return value
@@ -150,7 +153,7 @@ export default function DeviceList()
       "30d": 30 * 24 * 60 * 60 * 1000,
       "60d": 60 * 24 * 60 * 60 * 1000,
     };
-    
+
     const from = new Date(now.getTime() - periodMsByValue[alertPeriod]);
     const fromIso = from.toISOString();
     const toIso = now.toISOString();
@@ -174,7 +177,7 @@ export default function DeviceList()
 
         if (!response.ok)
         {
-          throw new Error("Erreur lors du chargement des alertes");
+          throw new Error(t('errors.loadAlerts'));
         }
 
         const events = await response.json() as TraccarEventReportItem[];
@@ -188,13 +191,13 @@ export default function DeviceList()
         const details: AlertDetail[] = alarmEvents.map((event) =>
         {
           const dateRaw = event.eventTime ?? event.deviceTime ?? event.serverTime ?? event.fixTime;
-          const typeRaw = (event.eventType ?? event.type ?? "inconnu").trim();
+          const typeRaw = (event.eventType ?? event.type ?? t('alarms.unknownType')).trim();
           const isGeofenceExit = typeRaw.toLowerCase() === "geofenceexit";
           const alarmNameRaw = (event.attributes?.alarm ?? event.attributes?.name ?? (isGeofenceExit ? "geofenceexit" : "")).trim();
 
           return {
             date: formatEventDate(dateRaw),
-            type: typeRaw || "inconnu",
+            type: typeRaw || t('alarms.unknownType'),
             alarmName: formatAlarmLabel(alarmNameRaw),
           };
         });
@@ -256,7 +259,7 @@ export default function DeviceList()
 
       return next;
     });
-  }, [alertPeriod]);
+  }, [alertPeriod, t, dateLocale]);
 
   const renderAlertsValue = (device: FullTraccarDevice) =>
   {
@@ -270,7 +273,7 @@ export default function DeviceList()
           type="button"
           onClick={() => setAlertsPopupDevice(device)}
           className="text-blue-600 underline hover:no-underline hover:cursor-pointer"
-          title={`Voir les ${count} alertes de ${device.name}`}>
+          title={t('viewAlertsTitle', { count, name: device.name })}>
           {count}
         </button>
       );
@@ -334,7 +337,7 @@ export default function DeviceList()
 
       if (!response.ok)
       {
-        throw new Error((data as unknown as { message?: string }).message ?? "Erreur lors du chargement");
+        throw new Error((data as unknown as { message?: string }).message ?? t('errors.load'));
       }
 
       setDevices(data);
@@ -351,13 +354,13 @@ export default function DeviceList()
     }
     catch (err: unknown)
     {
-      setError(err instanceof Error ? err.message : "Erreur inconnue");
+      setError(err instanceof Error ? err.message : t('errors.unknown'));
     }
     finally
     {
       setLoading(false);
     }
-  }, [hasUserFilter, selectedUserId]);
+  }, [hasUserFilter, selectedUserId, t]);
 
   useEffect(() =>
   {
@@ -439,8 +442,8 @@ export default function DeviceList()
     setSelectedDevice(undefined);
     await fetchDevices();
     showSuccess(isEditing
-      ? `Ovin "${savedDevice.name}" mis à jour avec succès.`
-      : `Ovin "${savedDevice.name}" créé avec succès.`
+      ? t('successUpdated', { name: savedDevice.name })
+      : t('successCreated', { name: savedDevice.name })
     );
   };
 
@@ -452,7 +455,7 @@ export default function DeviceList()
 
   const handleDelete = async (device: FullTraccarDevice) =>
   {
-    if (!confirm(`Supprimer l'ovin "${device.name}" (ID: ${device.id}) ? Cette action est irréversible.`))
+    if (!confirm(t('confirmDelete', { name: device.name, id: device.id })))
     {
       return;
     }
@@ -469,7 +472,7 @@ export default function DeviceList()
       if (!response.ok)
       {
         const data = await response.json() as { message?: string };
-        throw new Error(data.message ?? "Erreur lors de la suppression");
+        throw new Error(data.message ?? t('errors.delete'));
       }
 
       setDevices(prev => prev.filter(d => d.id !== device.id));
@@ -485,11 +488,11 @@ export default function DeviceList()
         delete next[device.id];
         return next;
       });
-      showSuccess(`Ovin "${device.name}" supprimé.`);
+      showSuccess(t('successDeleted', { name: device.name }));
     }
     catch (err: unknown)
     {
-      setError(err instanceof Error ? err.message : "Erreur inconnue");
+      setError(err instanceof Error ? err.message : t('errors.unknown'));
     }
     finally
     {
@@ -503,14 +506,14 @@ export default function DeviceList()
     {
       return (
         <select
-          aria-label="Filtrer par sexe"
-          title="Filtrer par sexe"
+          aria-label={t('filters.sex')}
+          title={t('filters.sex')}
           value={filters[key] ?? ""}
           onChange={e => handleFilterChange(key, e.target.value)}
           className="w-full rounded border border-gray-300 px-2 py-1 text-xs font-normal text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white">
-          <option value="">Sexe</option>
-          <option value="male">Male</option>
-          <option value="femelle">Femelle</option>
+          <option value="">{t('filters.sex')}</option>
+          <option value="male">{t('filters.male')}</option>
+          <option value="femelle">{t('filters.female')}</option>
         </select>
       );
     }
@@ -519,14 +522,14 @@ export default function DeviceList()
     {
       return (
         <select
-          aria-label="Filtrer par statut vaccinal"
-          title="Filtrer par statut vaccinal"
+          aria-label={t('filters.vaccinal')}
+          title={t('filters.vaccinal')}
           value={filters[key] ?? ""}
           onChange={e => handleFilterChange(key, e.target.value)}
           className="w-full rounded border border-gray-300 px-2 py-1 text-xs font-normal text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white">
-          <option value="">Statut vaccinal</option>
-          <option value="vacciné">Vacciné</option>
-          <option value="non vacciné">Non Vacciné</option>
+          <option value="">{t('filters.vaccinal')}</option>
+          <option value="vacciné">{t('filters.vaccinated')}</option>
+          <option value="non vacciné">{t('filters.notVaccinated')}</option>
         </select>
       );
     }
@@ -535,14 +538,14 @@ export default function DeviceList()
     {
       return (
         <select
-          aria-label="Filtrer par statut reproducteur"
-          title="Filtrer par statut reproducteur"
+          aria-label={t('filters.reproductive')}
+          title={t('filters.reproductive')}
           value={filters[key] ?? ""}
           onChange={e => handleFilterChange(key, e.target.value)}
           className="w-full rounded border border-gray-300 px-2 py-1 text-xs font-normal text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white">
-          <option value="">Statut reproducteur</option>
-          <option value="géniteur">Géniteur</option>
-          <option value="non géniteur">Non Géniteur</option>
+          <option value="">{t('filters.reproductive')}</option>
+          <option value="géniteur">{t('filters.geniteur')}</option>
+          <option value="non géniteur">{t('filters.nonGeniteur')}</option>
         </select>
       );
     }
@@ -571,15 +574,15 @@ export default function DeviceList()
   {
     if (loading)
     {
-      return <div className="text-center py-12 text-gray-500">Chargement...</div>;
+      return <div className="text-center py-12 text-gray-500">{t('loading')}</div>;
     }
 
     if (devices.length === 0)
     {
       return (
         <div className="text-center py-12 text-gray-400 bg-white rounded-2xl shadow">
-          Aucun ovin trouvé.&nbsp;<button onClick={handleCreate} className="ml-2 text-blue-600 underline hover:no-underline hover:cursor-pointer">
-            Créer le premier
+          {t('noDevices')}&nbsp;<button onClick={handleCreate} className="ml-2 text-blue-600 underline hover:no-underline hover:cursor-pointer">
+            {t('createFirst')}
           </button>
         </div>
       );
@@ -591,7 +594,7 @@ export default function DeviceList()
           <div className="p-4 border-b border-gray-200 bg-gray-50">
             <input
               type="text"
-              placeholder="Rechercher..."
+              placeholder={t('search')}
               value={filters["_global"] ?? ""}
               onChange={e =>
               {
@@ -621,25 +624,25 @@ export default function DeviceList()
                     <p className="text-xs text-gray-400">ID: <span className="font-mono">{device.id}</span></p>
                     <p className="text-base font-semibold text-gray-900 mt-1 wrap-break-word">{device.name}</p>
                     <p className="text-sm text-gray-600 font-mono mt-1 break-all">{device.uniqueId}</p>
-                    <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Alertes :</span> {renderAlertsValue(device)}</p>
-                    {device.attributes?.DZId && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">DZId :</span> {device.attributes.DZId}</p>}
-                    {ownerUser?.attributes?.eleveurNumNational && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">N° éleveur :</span> {ownerUser.attributes.eleveurNumNational}</p>}
-                    {ownerUser?.name && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Nom éleveur :</span> {ownerUser.name}</p>}
-                    {ownerUser?.attributes?.eleveurAdresse && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Adresse éleveur :</span> {ownerUser.attributes.eleveurAdresse}</p>}
-                    {device.attributes?.espace && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Espace :</span> {device.attributes.espace}</p>}
-                    {device.attributes?.race && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Race :</span> {device.attributes.race}</p>}
-                    {device.attributes?.sexe && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Sexe :</span> {device.attributes.sexe}</p>}
-                    {device.attributes?.dateNaissance && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Date de naissance :</span> {device.attributes.dateNaissance}</p>}
-                    {ownerUser?.attributes?.statutReproducteur && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Statut reproducteur :</span> {ownerUser.attributes.statutReproducteur}</p>}
-                    {device.attributes?.origine && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Origine :</span> {device.attributes.origine}</p>}
-                    {(device.attributes?.status ?? device.attributes?.statut) && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">Statut vaccinal :</span> {device.attributes.status ?? device.attributes.statut}</p>}
+                    <p className="text-sm text-gray-600 mt-1"><span className="font-medium">{t('mobile.alerts')}</span> {renderAlertsValue(device)}</p>
+                    {device.attributes?.DZId && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">{t('mobile.DZId')}</span> {device.attributes.DZId}</p>}
+                    {ownerUser?.attributes?.eleveurNumNational && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">{t('mobile.breederNumber')}</span> {ownerUser.attributes.eleveurNumNational}</p>}
+                    {ownerUser?.name && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">{t('mobile.breederName')}</span> {ownerUser.name}</p>}
+                    {ownerUser?.attributes?.eleveurAdresse && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">{t('mobile.breederAddress')}</span> {ownerUser.attributes.eleveurAdresse}</p>}
+                    {device.attributes?.espace && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">{t('mobile.space')}</span> {device.attributes.espace}</p>}
+                    {device.attributes?.race && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">{t('mobile.race')}</span> {device.attributes.race}</p>}
+                    {device.attributes?.sexe && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">{t('mobile.sex')}</span> {device.attributes.sexe}</p>}
+                    {device.attributes?.dateNaissance && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">{t('mobile.birthDate')}</span> {device.attributes.dateNaissance}</p>}
+                    {ownerUser?.attributes?.statutReproducteur && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">{t('mobile.reproductiveStatus')}</span> {ownerUser.attributes.statutReproducteur}</p>}
+                    {device.attributes?.origine && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">{t('mobile.origin')}</span> {device.attributes.origine}</p>}
+                    {(device.attributes?.status ?? device.attributes?.statut) && <p className="text-sm text-gray-600 mt-1"><span className="font-medium">{t('mobile.vaccinalStatus')}</span> {device.attributes.status ?? device.attributes.statut}</p>}
                   </div>
                 </div>
                 <div className="mt-4 flex gap-2">
                   <button
                     onClick={() => handleVisualize(device)}
-                    aria-label={`Visualiser ${device.name}`}
-                    title="Visualiser"
+                    aria-label={`${t('columns.actions')} ${device.name}`}
+                    title={t('columns.actions')}
                     className="flex-1 text-emerald-600 border border-emerald-200 hover:text-emerald-800 px-3 py-2 rounded-lg hover:bg-emerald-50 transition hover:cursor-pointer flex items-center justify-center">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12Z" />
@@ -648,8 +651,8 @@ export default function DeviceList()
                   </button>
                   <button
                     onClick={() => handleEdit(device)}
-                    aria-label={`Modifier ${device.name}`}
-                    title="Modifier"
+                    aria-label={`${t('columns.actions')} ${device.name}`}
+                    title={t('columns.actions')}
                     className="flex-1 text-blue-600 border border-blue-200 hover:text-blue-800 px-3 py-2 rounded-lg hover:bg-blue-50 transition hover:cursor-pointer flex items-center justify-center">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
                       <path d="M12 20h9" />
@@ -659,8 +662,8 @@ export default function DeviceList()
                   <button
                     onClick={() => void handleDelete(device)}
                     disabled={deletingId === device.id}
-                    aria-label={`Supprimer ${device.name}`}
-                    title="Supprimer"
+                    aria-label={`${t('columns.actions')} ${device.name}`}
+                    title={t('columns.actions')}
                     className="flex-1 text-red-600 border border-red-200 hover:text-red-800 px-3 py-2 rounded-lg hover:bg-red-50 transition disabled:opacity-50 hover:cursor-pointer flex items-center justify-center">
                     {deletingId === device.id ? (
                       <span className="text-xs">...</span>
@@ -684,40 +687,40 @@ export default function DeviceList()
           <table className="text-sm w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">ID</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Nom</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Identifiant unique</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Alertes</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">DZId</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">N° éleveur</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Nom éleveur</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Adresse éleveur</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Espace</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Race</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Sexe</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Date de naissance</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Statut reproducteur</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Origine</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Statut vaccinal</th>
-                <th className="text-center px-4 py-3 font-semibold text-gray-600">Actions</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">{t('columns.id')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">{t('columns.name')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">{t('columns.uniqueId')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">{t('columns.alerts')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">{t('columns.DZId')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">{t('columns.breederNumber')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">{t('columns.breederName')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">{t('columns.breederAddress')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">{t('columns.space')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">{t('columns.race')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">{t('columns.sex')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">{t('columns.birthDate')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">{t('columns.reproductiveStatus')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">{t('columns.origin')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">{t('columns.vaccinalStatus')}</th>
+                <th className="text-center px-4 py-3 font-semibold text-gray-600">{t('columns.actions')}</th>
               </tr>
               <tr className="border-t border-gray-200">
                 {([
-                  ["id", "ID"],
-                  ["name", "Nom"],
-                  ["uniqueId", "Identifiant"],
-                  ["alertes", "Alertes"],
-                  ["DZId", "DZId"],
-                  ["eleveurNumNational", "N° éleveur"],
-                  ["eleveurNom", "Nom éleveur"],
-                  ["eleveurAdresse", "Adresse éleveur"],
-                  ["espace", "Espace"],
-                  ["race", "Race"],
-                  ["sexe", "Sexe"],
-                  ["dateNaissance", "Date"],
-                  ["statutReproducteur", "Statut repr."],
-                  ["origine", "Origine"],
-                  ["status", "Vaccinal"],
+                  ["id", t('columns.id')],
+                  ["name", t('columns.name')],
+                  ["uniqueId", t('columns.uniqueId')],
+                  ["alertes", t('columns.alerts')],
+                  ["DZId", t('columns.DZId')],
+                  ["eleveurNumNational", t('columns.breederNumber')],
+                  ["eleveurNom", t('columns.breederName')],
+                  ["eleveurAdresse", t('columns.breederAddress')],
+                  ["espace", t('columns.space')],
+                  ["race", t('columns.race')],
+                  ["sexe", t('columns.sex')],
+                  ["dateNaissance", t('columns.birthDate')],
+                  ["statutReproducteur", t('columns.reproductiveStatus')],
+                  ["origine", t('columns.origin')],
+                  ["status", t('columns.vaccinalStatus')],
                 ] as [string, string][]).map(([key, placeholder]) => (
                   <th key={key} className="px-2 py-2">
                     {renderColumnFilter(key, placeholder)}
@@ -728,7 +731,7 @@ export default function DeviceList()
                     <button
                       onClick={resetFilters}
                       className="text-xs text-blue-600 hover:text-blue-800 underline hover:no-underline whitespace-nowrap hover:cursor-pointer">
-                      Réinitialiser
+                      {t('removeFilter')}
                     </button>
                   )}
                 </th>
@@ -760,8 +763,8 @@ export default function DeviceList()
                       <div className="inline-flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleVisualize(device)}
-                          aria-label={`Visualiser ${device.name}`}
-                          title="Visualiser"
+                          aria-label={`${t('columns.actions')} ${device.name}`}
+                          title={t('columns.actions')}
                           className="text-emerald-600 hover:text-emerald-800 px-3 py-1 rounded-lg hover:bg-emerald-50 transition hover:cursor-pointer inline-flex items-center justify-center">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12Z" />
@@ -770,8 +773,8 @@ export default function DeviceList()
                         </button>
                         <button
                           onClick={() => handleEdit(device)}
-                          aria-label={`Modifier ${device.name}`}
-                          title="Modifier"
+                          aria-label={`${t('columns.actions')} ${device.name}`}
+                          title={t('columns.actions')}
                           className="text-blue-600 hover:text-blue-800 px-3 py-1 rounded-lg hover:bg-blue-50 transition hover:cursor-pointer inline-flex items-center justify-center">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
                             <path d="M12 20h9" />
@@ -781,8 +784,8 @@ export default function DeviceList()
                         <button
                           onClick={() => void handleDelete(device)}
                           disabled={deletingId === device.id}
-                          aria-label={`Supprimer ${device.name}`}
-                          title="Supprimer"
+                          aria-label={`${t('columns.actions')} ${device.name}`}
+                          title={t('columns.actions')}
                           className="text-red-600 hover:text-red-800 px-3 py-1 rounded-lg hover:bg-red-50 transition disabled:opacity-50 hover:cursor-pointer inline-flex items-center justify-center">
                           {deletingId === device.id ? (
                             <span className="text-xs">...</span>
@@ -812,26 +815,26 @@ export default function DeviceList()
     <div className="max-w-full mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div className="gap-3">
-          <h1 className="text-2xl font-semibold">Gestion des ovins</h1>
+          <h1 className="text-2xl font-semibold">{t('title')}</h1>
         </div>
         <div className="flex flex-col sm:flex-row items-right gap-2">
           <div className="flex items-center gap-2">
-            <label htmlFor="alerts-period" className="text-sm text-black dark:text-white">Alertes sur</label>
+            <label htmlFor="alerts-period" className="text-sm text-black dark:text-white">{t('alertsOver')}</label>
             <select
               id="alerts-period"
               value={alertPeriod}
               onChange={e => setAlertPeriod(e.target.value as AlertPeriod)}
               className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
-              <option value="1d">24 heures</option>
-              <option value="7d">7 jours</option>
-              <option value="30d">30 jours</option>
-              <option value="60d">60 jours</option>
+              <option value="1d">{t('period24h')}</option>
+              <option value="7d">{t('period7d')}</option>
+              <option value="30d">{t('period30d')}</option>
+              <option value="60d">{t('period60d')}</option>
             </select>
-            </div>
-            <button
+          </div>
+          <button
             onClick={handleCreate}
             className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition hover:cursor-pointer text-sm">
-            + Ajouter un ovin
+            {t('addOvin')}
           </button>
         </div>
       </div>
@@ -841,14 +844,14 @@ export default function DeviceList()
           <div className="inline-flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
             <span>
               {selectedUserName
-                ? `Liste de ${selectedUserName}`
-                : `Liste de l'utilisateur #${selectedUserId}`}
+                ? t('filterByUser', { name: selectedUserName })
+                : t('filterByUserId', { id: selectedUserId })}
             </span>
             <Link href="/users" className="font-medium underline hover:no-underline">
-              retour aux utilisateurs
+              {t('backToUsers')}
             </Link>
             <Link href="/devices" className="font-medium underline hover:no-underline">
-              Retirer le filtre
+              {t('removeFilter')}
             </Link>
           </div>
         </div>
@@ -866,7 +869,7 @@ export default function DeviceList()
           <button
             onClick={() => void fetchDevices()}
             className="ml-3 underline hover:no-underline hover:cursor-pointer">
-            Réessayer
+            {t('retry')}
           </button>
         </div>
       )}
@@ -877,32 +880,32 @@ export default function DeviceList()
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <button
             type="button"
-            aria-label="Fermer la popup des alertes"
+            aria-label={t('alertsPopup.closeLabel')}
             className="absolute inset-0 bg-black/40"
             onClick={() => setAlertsPopupDevice(null)}
           />
 
           <dialog
             open
-            aria-label={`Détail des alertes pour ${alertsPopupDevice.name}`}
+            aria-label={t('alertsPopup.title', { name: alertsPopupDevice.name })}
             className="relative z-10 w-full max-w-2xl rounded-2xl bg-white p-0 shadow-2xl"
           >
             <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
               <h2 className="text-lg font-semibold text-gray-900">
-                Alertes de {alertsPopupDevice.name}
+                {t('alertsPopup.title', { name: alertsPopupDevice.name })}
               </h2>
               <button
                 type="button"
                 onClick={() => setAlertsPopupDevice(null)}
                 className="rounded-lg px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 hover:cursor-pointer"
-                aria-label="Fermer la popup des alertes">
-                Fermer
+                aria-label={t('alertsPopup.closeLabel')}>
+                {t('alertsPopup.close')}
               </button>
             </div>
 
             <div className="max-h-[60vh] overflow-y-auto px-5 py-4">
               {(alertDetailsByDeviceId[alertsPopupDevice.id] ?? []).length === 0 ? (
-                <p className="text-sm text-gray-500">Aucune alerte disponible.</p>
+                <p className="text-sm text-gray-500">{t('alertsPopup.noAlerts')}</p>
               ) : (
                 <div className="divide-y divide-gray-100">
                   {(alertDetailsByDeviceId[alertsPopupDevice.id] ?? []).map((alert, index) => (

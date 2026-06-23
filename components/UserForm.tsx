@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import type { FullTraccarUser } from "@/types/traccar-types";
 
 interface UserFormProps
@@ -67,6 +68,7 @@ function buildUserAttributes(formData: UserFormData, baseAttributes: Record<stri
 
 export default function UserForm({ user, onSuccess, onCancel }: Readonly<UserFormProps>)
 {
+  const t = useTranslations('userForm');
   const isEditing = user !== undefined;
 
   const [formData, setFormData] = useState<UserFormData>({
@@ -105,21 +107,21 @@ export default function UserForm({ user, onSuccess, onCancel }: Readonly<UserFor
 
     if (!formData.name.trim())
     {
-      setMessage("Erreur : Le nom est requis.");
+      setMessage(t('errors.nameRequired'));
       setLoading(false);
       return;
     }
 
     if (!formData.email.trim())
     {
-      setMessage("Erreur : L'email est requis.");
+      setMessage(t('errors.emailRequired'));
       setLoading(false);
       return;
     }
 
     if (!isEditing && !formData.password.trim())
     {
-      setMessage("Erreur : Le mot de passe est requis.");
+      setMessage(t('errors.passwordRequired'));
       setLoading(false);
       return;
     }
@@ -137,7 +139,6 @@ export default function UserForm({ user, onSuccess, onCancel }: Readonly<UserFor
       ...(Object.keys(attributes).length > 0 && { attributes }),
     };
 
-    // N'envoie le mot de passe que si renseigné (obligatoire à la création, optionnel en édition)
     if (formData.password.trim())
     {
       payload.password = formData.password.trim();
@@ -158,14 +159,14 @@ export default function UserForm({ user, onSuccess, onCancel }: Readonly<UserFor
 
       if (!response.ok)
       {
-        throw new Error(data.message ?? "Erreur inconnue");
+        throw new Error(data.message ?? t('errors.unknown'));
       }
 
       onSuccess(data);
     }
     catch (error: unknown)
     {
-      setMessage(`Erreur : ${error instanceof Error ? error.message : "Erreur inconnue"}`);
+      setMessage(t('errors.prefix', { message: error instanceof Error ? error.message : t('errors.unknown') }));
     }
     finally
     {
@@ -173,9 +174,9 @@ export default function UserForm({ user, onSuccess, onCancel }: Readonly<UserFor
     }
   };
 
-  let btnLabel = "Créer";
-  if (loading) btnLabel = "Envoi...";
-  else if (isEditing) btnLabel = "Mettre à jour";
+  let btnLabel = t('create');
+  if (loading) btnLabel = t('sending');
+  else if (isEditing) btnLabel = t('update');
 
   const input =
     "w-full rounded-xl border border-gray-300 text-gray-700 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500";
@@ -185,30 +186,30 @@ export default function UserForm({ user, onSuccess, onCancel }: Readonly<UserFor
   return (
     <div className="max-w-lg mx-auto p-8 bg-white shadow-2xl rounded-2xl">
       <h2 className="text-2xl font-semibold mb-8 text-center text-gray-700">
-        {isEditing ? "Modifier l'utilisateur" : "Créer un utilisateur"}
+        {isEditing ? t('titleEdit') : t('titleCreate')}
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label htmlFor="name" className={label}>Nom <span className="text-red-500">*</span></label>
+          <label htmlFor="name" className={label}>{t('name')} <span className="text-red-500">*</span></label>
           <input
             id="name"
             className={input}
             name="name"
-            placeholder="Nom complet"
+            placeholder={t('namePlaceholder')}
             value={formData.name}
             onChange={handleChange}
             required />
         </div>
 
         <div>
-          <label htmlFor="email" className={label}>Email <span className="text-red-500">*</span></label>
+          <label htmlFor="email" className={label}>{t('email')} <span className="text-red-500">*</span></label>
           <input
             id="email"
             className={input}
             type="email"
             name="email"
-            placeholder="adresse@exemple.com"
+            placeholder={t('emailPlaceholder')}
             value={formData.email}
             onChange={handleChange}
             required />
@@ -216,9 +217,9 @@ export default function UserForm({ user, onSuccess, onCancel }: Readonly<UserFor
 
         <div>
           <label htmlFor="password" className={label}>
-            Mot de passe {!isEditing && <span className="text-red-500">*</span>}
+            {t('password')} {!isEditing && <span className="text-red-500">*</span>}
             {isEditing && (
-              <span className="text-gray-400 font-normal"> (laisser vide pour conserver l&apos;actuel)</span>
+              <span className="text-gray-400 font-normal"> {t('passwordEdit')}</span>
             )}
           </label>
           <input
@@ -226,47 +227,47 @@ export default function UserForm({ user, onSuccess, onCancel }: Readonly<UserFor
             className={input}
             type="password"
             name="password"
-            placeholder={isEditing ? "Nouveau mot de passe (optionnel)" : "Mot de passe"}
+            placeholder={isEditing ? t('passwordEditPlaceholder') : t('passwordPlaceholder')}
             value={formData.password}
             onChange={handleChange}
             autoComplete="new-password" />
         </div>
 
         <div>
-          <label htmlFor="phone" className={label}>Téléphone</label>
+          <label htmlFor="phone" className={label}>{t('phone')}</label>
           <input
             id="phone"
             className={input}
             name="phone"
-            placeholder="+33..."
+            placeholder={t('phonePlaceholder')}
             value={formData.phone}
             onChange={handleChange} />
         </div>
 
         <div>
-          <label htmlFor="eleveurNumNational" className={label}>Numéro national de l&apos;éleveur</label>
+          <label htmlFor="eleveurNumNational" className={label}>{t('breederNumber')}</label>
           <input
             id="eleveurNumNational"
             className={input}
             name="eleveurNumNational"
-            placeholder="Numéro national éleveur"
+            placeholder={t('breederNumberPlaceholder')}
             value={formData.eleveurNumNational}
             onChange={handleChange} />
         </div>
 
         <div>
-          <label htmlFor="eleveurAdresse" className={label}>Adresse de l&apos;éleveur</label>
+          <label htmlFor="eleveurAdresse" className={label}>{t('breederAddress')}</label>
           <input
             id="eleveurAdresse"
             className={input}
             name="eleveurAdresse"
-            placeholder="Adresse de l'éleveur"
+            placeholder={t('breederAddressPlaceholder')}
             value={formData.eleveurAdresse}
             onChange={handleChange} />
         </div>
 
         <div>
-          <span className={label}>Statut reproducteur</span>
+          <span className={label}>{t('reproductiveStatus')}</span>
           <div className="flex items-center gap-6">
             <label htmlFor="user-statut-reproducteur-geniteur" className="flex items-center gap-2 text-sm text-gray-700">
               <input
@@ -277,7 +278,7 @@ export default function UserForm({ user, onSuccess, onCancel }: Readonly<UserFor
                 checked={formData.statutReproducteur === "Géniteur"}
                 onChange={handleChange}
                 className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500" />
-              <span>Géniteur</span>
+              <span>{t('geniteur')}</span>
             </label>
             <label htmlFor="user-statut-reproducteur-non-geniteur" className="flex items-center gap-2 text-sm text-gray-700">
               <input
@@ -288,14 +289,14 @@ export default function UserForm({ user, onSuccess, onCancel }: Readonly<UserFor
                 checked={formData.statutReproducteur === "Non Géniteur"}
                 onChange={handleChange}
                 className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500" />
-              <span>Non Géniteur</span>
+              <span>{t('nonGeniteur')}</span>
             </label>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="deviceLimit" className={label}>Limite d&apos;appareils</label>
+            <label htmlFor="deviceLimit" className={label}>{t('deviceLimit')}</label>
             <input
               id="deviceLimit"
               className={input}
@@ -305,7 +306,7 @@ export default function UserForm({ user, onSuccess, onCancel }: Readonly<UserFor
               onChange={handleChange} />
           </div>
           <div>
-            <label htmlFor="userLimit" className={label}>Limite d&apos;utilisateurs</label>
+            <label htmlFor="userLimit" className={label}>{t('userLimit')}</label>
             <input
               id="userLimit"
               className={input}
@@ -318,8 +319,8 @@ export default function UserForm({ user, onSuccess, onCancel }: Readonly<UserFor
 
         <div className="space-y-1">
           {[
-            { key: "administrator", label: "Administrateur" },
-            { key: "disabled", label: "Désactivé" },
+            { key: "administrator", label: t('administrator') },
+            { key: "disabled", label: t('disabled') },
           ].map(item => (
             <label key={item.key} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition cursor-pointer">
               <input
@@ -334,7 +335,7 @@ export default function UserForm({ user, onSuccess, onCancel }: Readonly<UserFor
         </div>
 
         {message && (
-          <p className={`text-sm text-center ${message.startsWith("Erreur") ? "text-red-600" : "text-green-600"}`}>
+          <p className="text-sm text-center text-red-600">
             {message}
           </p>
         )}
@@ -344,7 +345,7 @@ export default function UserForm({ user, onSuccess, onCancel }: Readonly<UserFor
             type="button"
             onClick={onCancel}
             className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-xl hover:bg-gray-50 transition">
-            Annuler
+            {t('cancel')}
           </button>
           <button
             type="submit"

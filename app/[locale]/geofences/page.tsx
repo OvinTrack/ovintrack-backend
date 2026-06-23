@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import type { LayerGroup, Map as LeafletMap, Path } from 'leaflet';
 import type { FullTraccarUser, Ovin, TraccarGeofence } from '@/types/traccar-types';
 import dynamic from 'next/dynamic';
+import { useRouter } from '@/i18n/navigation';
 
 const GeofenceDrawPanel = dynamic(() => import('@/components/GeofenceDrawPanel'), { ssr: false });
 import GeofenceList from '@/components/GeofenceList';

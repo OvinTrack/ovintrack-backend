@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { FullTraccarDevice, TraccarDevice, TraccarUser } from "@/types/traccar-types";
 
 interface DeviceFormProps
@@ -54,7 +55,7 @@ interface DeviceFormData
   name: string;
   uniqueId: string;
   DZId: string;
-  eleveurId: string;         // FK → ID du user Traccar propriétaire
+  eleveurId: string;
   espace: string;
   race: string;
   sexe: string;
@@ -112,6 +113,7 @@ function buildAttributes(formData: DeviceFormData, baseAttributes: Record<string
 
 export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<DeviceFormProps>)
 {
+  const t = useTranslations('deviceForm');
   const isEditing = device !== undefined;
 
   const [formData, setFormData] = useState({
@@ -148,7 +150,7 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
       }
       catch
       {
-        // Non bloquant : le select sera vide
+        // non-blocking
       }
     };
     void loadUsers();
@@ -170,7 +172,7 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
 
   const failSubmission = (errorMessage: string) =>
   {
-    setMessage(`Erreur : ${errorMessage}`);
+    setMessage(t('errors.prefix', { message: errorMessage }));
     setLoading(false);
   };
 
@@ -178,12 +180,12 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
   {
     if (!formData.name.trim())
     {
-      return "Le nom est requis.";
+      return t('errors.nameRequired');
     }
 
     if (!formData.uniqueId.trim())
     {
-      return "L'identifiant unique est requis.";
+      return t('errors.uniqueIdRequired');
     }
 
     return null;
@@ -198,7 +200,7 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
 
     if (!devicesResponse.ok)
     {
-      return "Impossible de verifier l'unicite de l'identifiant unique.";
+      return t('errors.cannotCheckId');
     }
 
     const devices = await devicesResponse.json() as TraccarDevice[];
@@ -209,7 +211,7 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
 
     if (duplicateDevice)
     {
-      return "Un ovin existe deja avec cet identifiant unique.";
+      return t('errors.duplicateUniqueId');
     }
 
     return null;
@@ -234,7 +236,7 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
     if (!duplicateUniqueIdError)
     {
       setIsUniqueIdAvailable(true);
-      setUniqueIdMessage("Identifiant unique disponible.");
+      setUniqueIdMessage(t('idAvailable'));
       setIsCheckingUniqueId(false);
       return;
     }
@@ -300,26 +302,26 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
       if (!response.ok)
       {
         const detailsMessage = getDetailsErrorMessage(data?.details);
-        const message = isGenericTraccarRequestErrorMessage(data?.message) && detailsMessage
+        const msg = isGenericTraccarRequestErrorMessage(data?.message) && detailsMessage
           ? detailsMessage
           : data?.message;
 
-        const fallbackMessage = `La requete a echoue (HTTP ${response.status}).`;
+        const fallbackMessage = t('errors.requestFailed', { status: response.status });
 
-        throw new Error(message ?? detailsMessage ?? fallbackMessage);
+        throw new Error(msg ?? detailsMessage ?? fallbackMessage);
       }
 
       if (!data)
       {
-        throw new Error("La reponse du serveur est invalide.");
+        throw new Error(t('errors.invalidResponse'));
       }
 
       onSuccess(data);
     }
     catch (error: unknown)
     {
-      const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
-      setMessage(`Erreur : ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : t('errors.prefix', { message: '' });
+      setMessage(t('errors.prefix', { message: errorMessage }));
     }
     finally
     {
@@ -327,15 +329,15 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
     }
   };
 
-  let btnLabel = "Créer";
+  let btnLabel = t('create');
 
   if (loading)
   {
-    btnLabel = "Envoi...";
+    btnLabel = t('sending');
   }
   else if (isEditing)
   {
-    btnLabel = "Mettre à jour";
+    btnLabel = t('update');
   }
 
   const input =
@@ -351,35 +353,35 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
   return (
     <div className="max-w-lg mx-auto p-8 bg-white shadow-2xl rounded-2xl">
       <h2 className="text-2xl font-semibold mb-8 text-center text-gray-700">
-        {isEditing ? "Modifier l'ovin" : "Créer un ovin"}
+        {isEditing ? t('titleEdit') : t('titleCreate')}
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label htmlFor="name" className={label}>Nom <span className="text-red-500">*</span></label>
+          <label htmlFor="name" className={label}>{t('name')} <span className="text-red-500">{t('required')}</span></label>
           <input
             id="name"
             className={input}
             name="name"
-            placeholder="Nom de l'ovin"
+            placeholder={t('namePlaceholder')}
             value={formData.name}
             onChange={handleChange}
             required />
         </div>
 
         <div>
-          <label htmlFor="uniqueId" className={label}>Identifiant unique <span className="text-red-500">*</span></label>
+          <label htmlFor="uniqueId" className={label}>{t('uniqueId')} <span className="text-red-500">{t('required')}</span></label>
           <input
             id="uniqueId"
             className={uniqueIdInputClass}
             name="uniqueId"
-            placeholder="IMEI ou identifiant unique"
+            placeholder={t('uniqueIdPlaceholder')}
             value={formData.uniqueId}
             onChange={handleChange}
             onBlur={handleUniqueIdBlur}
             required />
           {isCheckingUniqueId && (
-            <p className="mt-1 text-xs text-gray-500">Verification de l&apos;identifiant...</p>
+            <p className="mt-1 text-xs text-gray-500">{t('checking')}</p>
           )}
           {!isCheckingUniqueId && uniqueIdMessage && (
             <p className={`mt-1 text-xs ${isUniqueIdAvailable ? "text-green-600" : "text-red-600"}`}>
@@ -389,25 +391,25 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
         </div>
 
         <div>
-          <label htmlFor="DZId" className={label}>DZId</label>
+          <label htmlFor="DZId" className={label}>{t('DZId')}</label>
           <input
             id="DZId"
             className={input}
             name="DZId"
-            placeholder="DZId"
+            placeholder={t('DZId')}
             value={formData.DZId}
             onChange={handleChange} />
         </div>
 
         <div>
-          <label htmlFor="eleveurId" className={label}>Éleveur (utilisateur propriétaire)</label>
+          <label htmlFor="eleveurId" className={label}>{t('breeder')}</label>
           <select
             id="eleveurId"
             className={input}
             name="eleveurId"
             value={formData.eleveurId}
             onChange={handleChange}>
-            <option value="">— Aucun —</option>
+            <option value="">{t('noBreeder')}</option>
             {users.map(u => (
               <option key={u.id} value={String(u.id)}>{u.name}</option>
             ))}
@@ -415,29 +417,29 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
         </div>
 
         <div>
-          <label htmlFor="espace" className={label}>Espace</label>
+          <label htmlFor="espace" className={label}>{t('space')}</label>
           <input
             id="espace"
             className={input}
             name="espace"
-            placeholder="Espace"
+            placeholder={t('space')}
             value={formData.espace}
             onChange={handleChange} />
         </div>
 
         <div>
-          <label htmlFor="race" className={label}>Race</label>
+          <label htmlFor="race" className={label}>{t('race')}</label>
           <input
             id="race"
             className={input}
             name="race"
-            placeholder="Race"
+            placeholder={t('race')}
             value={formData.race}
             onChange={handleChange} />
         </div>
 
         <div>
-          <span className={label}>Sexe</span>
+          <span className={label}>{t('sex')}</span>
           <div className="flex items-center gap-6">
             <label htmlFor="sexe-male" className="flex items-center gap-2 text-sm text-gray-700">
               <input
@@ -448,7 +450,7 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
                 checked={formData.sexe === "Male"}
                 onChange={handleChange}
                 className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500" />
-              <span>Male</span>
+              <span>{t('male')}</span>
             </label>
             <label htmlFor="sexe-femelle" className="flex items-center gap-2 text-sm text-gray-700">
               <input
@@ -459,13 +461,13 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
                 checked={formData.sexe === "Femelle"}
                 onChange={handleChange}
                 className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500" />
-              <span>Femelle</span>
+              <span>{t('female')}</span>
             </label>
           </div>
         </div>
 
         <div>
-          <label htmlFor="dateNaissance" className={label}>Date de naissance</label>
+          <label htmlFor="dateNaissance" className={label}>{t('birthDate')}</label>
           <input
             id="dateNaissance"
             className={input}
@@ -476,18 +478,18 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
         </div>
 
         <div>
-          <label htmlFor="origine" className={label}>Origine</label>
+          <label htmlFor="origine" className={label}>{t('origin')}</label>
           <input
             id="origine"
             className={input}
             name="origine"
-            placeholder="Origine"
+            placeholder={t('origin')}
             value={formData.origine}
             onChange={handleChange} />
         </div>
 
         <div>
-          <span className={label}>Statut vaccinal</span>
+          <span className={label}>{t('vaccinalStatus')}</span>
           <div className="flex items-center gap-6">
             <label htmlFor="status-vaccine" className="flex items-center gap-2 text-sm text-gray-700">
               <input
@@ -498,7 +500,7 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
                 checked={formData.status === "Vacciné"}
                 onChange={handleChange}
                 className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500" />
-              <span>Vacciné</span>
+              <span>{t('vaccinated')}</span>
             </label>
             <label htmlFor="status-non-vaccine" className="flex items-center gap-2 text-sm text-gray-700">
               <input
@@ -509,13 +511,13 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
                 checked={formData.status === "Non Vacciné"}
                 onChange={handleChange}
                 className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500" />
-              <span>Non Vacciné</span>
+              <span>{t('notVaccinated')}</span>
             </label>
           </div>
         </div>
 
         {message && (
-          <p className={`text-sm text-center ${message.startsWith("Erreur") ? "text-red-600" : "text-green-600"}`}>
+          <p className="text-sm text-center text-red-600">
             {message}
           </p>
         )}
@@ -525,7 +527,7 @@ export default function DeviceForm({ device, onSuccess, onCancel }: Readonly<Dev
             type="button"
             onClick={onCancel}
             className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-xl hover:bg-gray-50 transition hover:cursor-pointer">
-            Annuler
+            {t('cancel')}
           </button>
           <button
             type="submit"

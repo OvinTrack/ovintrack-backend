@@ -1,14 +1,16 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 import type { Ovin } from '@/types/traccar-types';
 import Map from "@/components/Map";
 import { SESSION_CHANGED_EVENT } from '@/lib/utils';
 
 function TraccarMapContent()
 {
+  const t = useTranslations('home');
   const [points, setPoints] = useState<Ovin[]>([]);
   const searchParams = useSearchParams();
   const selectedUserId = searchParams.get('userId');
@@ -93,13 +95,15 @@ function TraccarMapContent()
         <div className="px-4 pt-4 sm:px-8">
           <div className="inline-flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
             <span>
-              Affichage des devices de l&apos;utilisateur {selectedUserName ? `"${selectedUserName}"` : `#${selectedUserId}`}.
+              {selectedUserName
+                ? t('filterByUser', { name: selectedUserName })
+                : t('filterByUserId', { id: selectedUserId })}
             </span>
             <Link href="/users" className="font-medium underline hover:no-underline">
-              Retour aux utilisateurs
+              {t('backToUsers')}
             </Link>
             <Link href="/" className="font-medium underline hover:no-underline">
-              Retirer le filtre
+              {t('removeFilter')}
             </Link>
           </div>
         </div>
@@ -108,11 +112,12 @@ function TraccarMapContent()
         <div className="px-4 pt-4 sm:px-8">
           <div className="inline-flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
             <span>
-              Visualisation du device #{selectedDeviceId}
-              {points[0]?.device.name ? ` (${points[0].device.name})` : ''}.
+              {points[0]?.device.name
+                ? t('viewingDeviceNamed', { id: selectedDeviceId, name: points[0].device.name })
+                : t('viewingDevice', { id: selectedDeviceId })}
             </span>
             <Link href={clearDeviceFilterHref} className="font-medium underline hover:no-underline">
-              Retirer le filtre device
+              {t('removeDeviceFilter')}
             </Link>
           </div>
         </div>

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import type { FullTraccarUser } from "@/types/traccar-types";
 import UserForm from "./UserForm";
 
@@ -9,6 +10,7 @@ type View = "list" | "create" | "edit";
 
 export default function UserList()
 {
+  const t = useTranslations('users');
   const [users, setUsers] = useState<FullTraccarUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -28,14 +30,14 @@ export default function UserList()
 
       if (!response.ok)
       {
-        throw new Error((data as unknown as { message?: string }).message ?? "Erreur lors du chargement");
+        throw new Error((data as unknown as { message?: string }).message ?? t('errors.load'));
       }
 
       setUsers(data);
     }
     catch (err: unknown)
     {
-      setError(err instanceof Error ? err.message : "Erreur inconnue");
+      setError(err instanceof Error ? err.message : t('errors.unknown'));
     }
     finally
     {
@@ -73,8 +75,8 @@ export default function UserList()
     setSelectedUser(undefined);
     await fetchUsers();
     showSuccess(isEditing
-      ? `Utilisateur "${savedUser.name}" mis à jour avec succès.`
-      : `Utilisateur "${savedUser.name}" créé avec succès.`
+      ? t('successUpdated', { name: savedUser.name })
+      : t('successCreated', { name: savedUser.name })
     );
   };
 
@@ -86,7 +88,7 @@ export default function UserList()
 
   const handleDelete = async (user: FullTraccarUser) =>
   {
-    if (!confirm(`Supprimer l'utilisateur "${user.name}" (${user.email}) ? Cette action est irréversible.`))
+    if (!confirm(t('confirmDelete', { name: user.name, email: user.email })))
     {
       return;
     }
@@ -103,15 +105,15 @@ export default function UserList()
       if (!response.ok)
       {
         const data = await response.json() as { message?: string };
-        throw new Error(data.message ?? "Erreur lors de la suppression");
+        throw new Error(data.message ?? t('errors.delete'));
       }
 
       setUsers(prev => prev.filter(u => u.id !== user.id));
-      showSuccess(`Utilisateur "${user.name}" supprimé.`);
+      showSuccess(t('successDeleted', { name: user.name }));
     }
     catch (err: unknown)
     {
-      setError(err instanceof Error ? err.message : "Erreur inconnue");
+      setError(err instanceof Error ? err.message : t('errors.unknown'));
     }
     finally
     {
@@ -133,14 +135,14 @@ export default function UserList()
   {
     if (loading)
     {
-      return <div className="text-center py-12 text-gray-500">Chargement...</div>;
+      return <div className="text-center py-12 text-gray-500">{t('loading')}</div>;
     }
 
     if (users.length === 0)
     {
       return (
         <div className="text-center py-12 text-gray-400 bg-white rounded-2xl shadow">
-          Aucun utilisateur trouvé.&nbsp;<button onClick={handleCreate} className="ml-2 text-blue-600 underline hover:no-underline hover:cursor-pointer">Créer le premier</button>
+          {t('noUsers')}&nbsp;<button type="button" onClick={handleCreate} className="ml-2 text-blue-600 underline hover:no-underline hover:cursor-pointer">{t('createFirst')}</button>
         </div>
       );
     }
@@ -157,41 +159,41 @@ export default function UserList()
                 <p className="text-sm text-gray-600 mt-0.5">{user.email}</p>
                 {user.attributes?.eleveurNumNational && (
                   <p className="text-sm text-gray-600 mt-1">
-                    <span className="font-medium">N° éleveur :</span> {user.attributes.eleveurNumNational}
+                    <span className="font-medium">{t('columns.breederNumber')} :</span> {user.attributes.eleveurNumNational}
                   </p>
                 )}
                 {user.attributes?.eleveurAdresse && (
                   <p className="text-sm text-gray-600 mt-1">
-                    <span className="font-medium">Adresse :</span> {user.attributes.eleveurAdresse}
+                    <span className="font-medium">{t('columns.address')} :</span> {user.attributes.eleveurAdresse}
                   </p>
                 )}
                 {user.attributes?.statutReproducteur && (
                   <p className="text-sm text-gray-600 mt-1">
-                    <span className="font-medium">Statut reprod. :</span> {user.attributes.statutReproducteur}
+                    <span className="font-medium">{t('columns.reproductiveStatus')} :</span> {user.attributes.statutReproducteur}
                   </p>
                 )}
                 {user.administrator && (
-                  <span className="inline-block mt-1 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Admin</span>
+                  <span className="inline-block mt-1 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{t('admin')}</span>
                 )}
                 {user.disabled && (
-                  <span className="inline-block mt-1 ml-1 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Désactivé</span>
+                  <span className="inline-block mt-1 ml-1 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">{t('disabled')}</span>
                 )}
               </div>
               <div className="mt-4 flex flex-nowrap items-center gap-2 overflow-x-auto">
                 <Link
                   href={{ pathname: "/", query: { userId: String(user.id), userName: user.name } }}
                   className="shrink-0 text-emerald-700 border border-emerald-200 hover:text-emerald-900 px-3 py-2 rounded-lg hover:bg-emerald-50 transition text-center whitespace-nowrap">
-                  Voir sur la carte
+                  {t('viewOnMap')}
                 </Link>
                 <Link
                   href={{ pathname: "/devices", query: { userId: String(user.id), userName: user.name } }}
                   className="shrink-0 text-cyan-700 border border-cyan-200 hover:text-cyan-900 px-3 py-2 rounded-lg hover:bg-cyan-50 transition text-center whitespace-nowrap">
-                  Voir la liste
+                  {t('viewList')}
                 </Link>
                 <button
+                  type="button"
                   onClick={() => handleEdit(user)}
-                  aria-label={`Modifier ${user.name}`}
-                  title="modifier"
+                  aria-label={`${t('columns.actions')} ${user.name}`}
                   className="shrink-0 text-blue-600 border border-blue-200 hover:text-blue-800 px-3 py-2 rounded-lg hover:bg-blue-50 transition hover:cursor-pointer flex items-center justify-center whitespace-nowrap">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
                     <path d="M12 20h9" />
@@ -199,10 +201,10 @@ export default function UserList()
                   </svg>
                 </button>
                 <button
+                  type="button"
                   onClick={() => void handleDelete(user)}
                   disabled={deletingId === user.id}
-                  aria-label={`Supprimer ${user.name}`}
-                  title="Supprimer"
+                  aria-label={`${t('columns.actions')} ${user.name}`}
                   className="shrink-0 text-red-600 border border-red-200 hover:text-red-800 px-3 py-2 rounded-lg hover:bg-red-50 transition disabled:opacity-50 hover:cursor-pointer flex items-center justify-center whitespace-nowrap">
                   {deletingId === user.id ? (
                     <span className="text-xs">...</span>
@@ -226,14 +228,14 @@ export default function UserList()
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="text-left px-6 py-3 font-semibold text-gray-600">ID</th>
-                <th className="text-left px-6 py-3 font-semibold text-gray-600">Nom</th>
-                <th className="text-left px-6 py-3 font-semibold text-gray-600">Email</th>
-                <th className="text-left px-6 py-3 font-semibold text-gray-600">N° éleveur</th>
-                <th className="text-left px-6 py-3 font-semibold text-gray-600">Adresse</th>
-                <th className="text-left px-6 py-3 font-semibold text-gray-600">Statut reprod.</th>
-                <th className="text-left px-6 py-3 font-semibold text-gray-600">Rôle</th>
-                <th className="text-center px-6 py-3 font-semibold text-gray-600">Actions</th>
+                <th className="text-left px-6 py-3 font-semibold text-gray-600">{t('columns.id')}</th>
+                <th className="text-left px-6 py-3 font-semibold text-gray-600">{t('columns.name')}</th>
+                <th className="text-left px-6 py-3 font-semibold text-gray-600">{t('columns.email')}</th>
+                <th className="text-left px-6 py-3 font-semibold text-gray-600">{t('columns.breederNumber')}</th>
+                <th className="text-left px-6 py-3 font-semibold text-gray-600">{t('columns.address')}</th>
+                <th className="text-left px-6 py-3 font-semibold text-gray-600">{t('columns.reproductiveStatus')}</th>
+                <th className="text-left px-6 py-3 font-semibold text-gray-600">{t('columns.role')}</th>
+                <th className="text-center px-6 py-3 font-semibold text-gray-600">{t('columns.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -243,7 +245,7 @@ export default function UserList()
                   <td className="px-6 py-4 font-medium text-gray-900">
                     {user.name}
                     {user.disabled && (
-                      <span className="ml-2 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Désactivé</span>
+                      <span className="ml-2 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">{t('disabled')}</span>
                     )}
                   </td>
                   <td className="px-6 py-4 text-gray-600">{user.email}</td>
@@ -252,8 +254,8 @@ export default function UserList()
                   <td className="px-6 py-4 text-gray-600">{user.attributes?.statutReproducteur ?? ""}</td>
                   <td className="px-6 py-4">
                     {user.administrator
-                      ? <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Admin</span>
-                      : <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">Utilisateur</span>
+                      ? <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{t('admin')}</span>
+                      : <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{t('user')}</span>
                     }
                   </td>
                   <td className="px-4 py-4 text-right whitespace-nowrap">
@@ -261,17 +263,17 @@ export default function UserList()
                       <Link
                         href={{ pathname: "/", query: { userId: String(user.id), userName: user.name } }}
                         className="text-emerald-700 hover:text-emerald-900 px-2 py-1 rounded-lg hover:bg-emerald-50 transition whitespace-nowrap text-xs">
-                        Voir sur la carte
+                        {t('viewOnMap')}
                       </Link>
                       <Link
                         href={{ pathname: "/devices", query: { userId: String(user.id), userName: user.name } }}
                         className="text-cyan-700 hover:text-cyan-900 px-2 py-1 rounded-lg hover:bg-cyan-50 transition whitespace-nowrap text-xs">
-                        Voir la liste
+                        {t('viewList')}
                       </Link>
                       <button
+                        type="button"
                         onClick={() => handleEdit(user)}
-                        aria-label={`Modifier ${user.name}`}
-                        title="modifier"
+                        aria-label={`${t('columns.actions')} ${user.name}`}
                         className="text-blue-600 hover:text-blue-800 px-2 py-1 rounded-lg hover:bg-blue-50 transition hover:cursor-pointer inline-flex items-center justify-center whitespace-nowrap">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
                           <path d="M12 20h9" />
@@ -279,10 +281,10 @@ export default function UserList()
                         </svg>
                       </button>
                       <button
+                        type="button"
                         onClick={() => void handleDelete(user)}
                         disabled={deletingId === user.id}
-                        aria-label={`Supprimer ${user.name}`}
-                        title="Supprimer"
+                        aria-label={`${t('columns.actions')} ${user.name}`}
                         className="text-red-600 hover:text-red-800 px-2 py-1 rounded-lg hover:bg-red-50 transition disabled:opacity-50 hover:cursor-pointer inline-flex items-center justify-center whitespace-nowrap">
                         {deletingId === user.id ? (
                           <span className="text-xs">...</span>
@@ -310,11 +312,12 @@ export default function UserList()
   return (
     <div className="mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl sm:text-2xl font-semibold">Gestion des utilisateurs</h1>
+        <h1 className="text-xl sm:text-2xl font-semibold">{t('title')}</h1>
         <button
+          type="button"
           onClick={handleCreate}
           className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition hover:cursor-pointer text-sm">
-          + Ajouter un utilisateur
+          {t('addUser')}
         </button>
       </div>
 
@@ -328,9 +331,10 @@ export default function UserList()
         <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">
           {error}
           <button
+            type="button"
             onClick={() => void fetchUsers()}
             className="ml-3 underline hover:no-underline hover:cursor-pointer">
-            Réessayer
+            {t('retry')}
           </button>
         </div>
       )}
