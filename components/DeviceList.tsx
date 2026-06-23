@@ -586,8 +586,8 @@ export default function DeviceList()
     }
 
     return (
-      <div className="bg-white shadow-md rounded-2xl overflow-hidden">
-        <div className="lg:hidden divide-y divide-gray-100">
+      <div className="bg-white shadow-md rounded-2xl">
+        <div className="lg:hidden overflow-hidden rounded-2xl divide-y divide-gray-100">
           <div className="p-4 border-b border-gray-200 bg-gray-50">
             <input
               type="text"
@@ -680,8 +680,8 @@ export default function DeviceList()
           })}
         </div>
 
-        <div className="hidden lg:block overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="hidden lg:block overflow-x-scroll rounded-2xl [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-slate-100 [&::-webkit-scrollbar-thumb]:rounded-sm [&::-webkit-scrollbar-thumb]:bg-slate-400 [&::-webkit-scrollbar-thumb:hover]:bg-slate-600">
+          <table className="text-sm w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">ID</th>
@@ -811,24 +811,27 @@ export default function DeviceList()
   return (
     <div className="max-w-full mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
+        <div className="gap-3">
           <h1 className="text-2xl font-semibold">Gestion des ovins</h1>
         </div>
-        <div className="flex items-center gap-2">
-          <label htmlFor="alerts-period" className="text-sm text-black dark:text-white">Alertes sur</label>
-          <select
-            id="alerts-period"
-            value={alertPeriod}
-            onChange={e => setAlertPeriod(e.target.value as AlertPeriod)}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
-            <option value="1d">24 heures</option>
-            <option value="7d">7 jours</option>
-            <option value="30d">30 jours</option>
-          </select>
-          <button
+        <div className="flex flex-col sm:flex-row items-right gap-2">
+          <div className="flex items-center gap-2">
+            <label htmlFor="alerts-period" className="text-sm text-black dark:text-white">Alertes sur</label>
+            <select
+              id="alerts-period"
+              value={alertPeriod}
+              onChange={e => setAlertPeriod(e.target.value as AlertPeriod)}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
+              <option value="1d">24 heures</option>
+              <option value="7d">7 jours</option>
+              <option value="30d">30 jours</option>
+              <option value="60d">60 jours</option>
+            </select>
+            </div>
+            <button
             onClick={handleCreate}
-            className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition hover:cursor-pointer">
-            + Nouvel ovin
+            className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition hover:cursor-pointer text-sm">
+            + Ajouter un ovin
           </button>
         </div>
       </div>
@@ -903,7 +906,7 @@ export default function DeviceList()
               ) : (
                 <div className="divide-y divide-gray-100">
                   {(alertDetailsByDeviceId[alertsPopupDevice.id] ?? []).map((alert, index) => (
-                    <div key={`${alertsPopupDevice.id}-${index}`} className="grid grid-cols-1 gap-1 py-2 text-sm text-gray-700 sm:grid-cols-[220px_1fr]">
+                    <div key={`${alertsPopupDevice.id}-${index}`} className="grid gap-1 py-2 text-sm text-gray-700 grid-cols-[220px_1fr]">
                       <span className="font-medium text-gray-900">{alert.date}</span>
                       <div className="flex flex-col">
                         <span>{alert.alarmName}</span>
