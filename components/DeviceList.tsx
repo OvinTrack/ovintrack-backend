@@ -84,7 +84,7 @@ export default function DeviceList()
 
   const dateLocale = locale === 'ar' ? 'ar-DZ' : 'fr-FR';
 
-  const formatEventDate = (rawDate?: string): string =>
+  const formatEventDate = useCallback((rawDate?: string): string =>
   {
     if (!rawDate)
     {
@@ -102,9 +102,9 @@ export default function DeviceList()
       dateStyle: "short",
       timeStyle: "medium",
     });
-  };
+  }, [t, dateLocale]);
 
-  const formatAlarmLabel = (rawAlarmName?: string): string =>
+  const formatAlarmLabel = useCallback((rawAlarmName?: string): string =>
   {
     const value = rawAlarmName?.trim() ?? "";
 
@@ -128,14 +128,14 @@ export default function DeviceList()
 
     if (normalized in alarmKeys)
     {
-      return t(`alarms.${normalized}` as Parameters<typeof t>[0]);
+      return t(`alarms.${normalized}`);
     }
 
     return value
       .replace(/([a-z])([A-Z])/g, "$1 $2")
       .replace(/[_-]+/g, " ")
       .trim();
-  };
+  }, [t]);
 
   const fetchAlerts = useCallback(async (deviceList: FullTraccarDevice[]) =>
   {
@@ -259,7 +259,7 @@ export default function DeviceList()
 
       return next;
     });
-  }, [alertPeriod, t, dateLocale]);
+  }, [alertPeriod, t, formatEventDate, formatAlarmLabel]);
 
   const renderAlertsValue = (device: FullTraccarDevice) =>
   {

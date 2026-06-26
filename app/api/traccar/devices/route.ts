@@ -26,14 +26,14 @@ function resolveOwnerUserId(attributes: Record<string, string> | undefined, fall
     return fallbackUserId;
 }
 
-async function assignDevicePermissionsToCurrentUserAndAdmins(deviceId: number, currentUserId: number): Promise<void>
+async function assignDevicePermissionsToCurrentUserAndAdmins(deviceId: number, ownerUserId: number): Promise<void>
 {
     const users = await traccarAdminFetch<FullTraccarUser[]>('/api/users') ?? [];
     const adminIds = users
         .filter((user) => user.administrator)
         .map((user) => user.id);
 
-    const userIds = Array.from(new Set([currentUserId, ...adminIds]));
+    const userIds = Array.from(new Set([ownerUserId, ...adminIds]));
 
     for (const userId of userIds)
     {
@@ -228,17 +228,16 @@ export async function POST(request: NextRequest)
         try
         {
             const currentUser = await traccarFetch<TraccarUser>('/api/session');
+            const ownerUserId = resolveOwnerUserId(body.attributes, currentUser?.id);
 
-            if (currentUser?.id)
+            if (ownerUserId && currentUser?.id)
             {
-                await assignDevicePermissionsToCurrentUserAndAdmins(device.id, currentUser.id);
+                await assignDevicePermissionsToCurrentUserAndAdmins(device.id, ownerUserId);
             }
             else
             {
                 console.warn('[traccar/devices] Permission skip: no current user id available');
             }
-
-            const ownerUserId = resolveOwnerUserId(body.attributes, currentUser?.id);
 
             if (ownerUserId)
             {
